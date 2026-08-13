@@ -1,0 +1,32 @@
+# Dados (nunca versionar sinais brutos nem datasets processados)
+data/raw/**
+data/interim/**
+data/processed/**
+!data/**/.gitkeep
+
+# Artefatos de execucao
+outputs/**
+!outputs/.gitkeep
+logs/**
+!logs/.gitkeep
+*.npz
+*.npy
+*.pt
+*.pth
+*.ckpt
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

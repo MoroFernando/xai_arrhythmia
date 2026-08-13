@@ -1,0 +1,11 @@
+# Dependencias do projeto. Crie o ambiente com a versao de Python especificada
+# no README (conda create -n xai-arrhythmia python=3.11) e instale com:
+#   pip install -r requirements.txt
+numpy>=1.26
+scipy>=1.11
+pandas>=2.1
+matplotlib>=3.8
+tqdm>=4.66
+wfdb>=4.1.2
+ipykernel>=6.29
+-e .
