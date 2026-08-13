@@ -93,11 +93,15 @@ LUDB_WAVE_SYMBOLS = {"p": "P", "N": "QRS", "t": "T"}
 #: batimentos segmentados daquele registro.
 LUDB_RHYTHM_FIELD = "Rhythm"
 
-#: Ritmos de origem sinusal, mapeados para a classe 0 (nao-arritmia).
-#: Bradicardia e taquicardia sinusais sao anomalias de FREQUENCIA, nao de
-#: morfologia do batimento: uma CNN treinada no MIT-BIH para morfologia
-#: beat-to-beat classificaria esses batimentos como normais. Manter todos os
-#: ritmos sinusais na classe 0 alinha a semantica das duas bases.
+#: Ritmos mapeados para a classe 0 (nao-arritmia). Padrao do projeto: apenas o
+#: ritmo sinusal normal, analogo direto ao criterio adotado no MIT-BIH, onde so
+#: o simbolo 'N' recebe classe 0. Todo o restante e classe 1.
+LUDB_NORMAL_RHYTHMS = frozenset(["sinus rhythm"])
+
+#: Alternativa mais permissiva: todos os ritmos de origem sinusal na classe 0.
+#: Bradicardia e taquicardia sinusais sao anomalias de FREQUENCIA, e a janela
+#: de um unico batimento nao carrega informacao de intervalo RR — sob este
+#: agrupamento a classe 1 fica restrita aos ritmos nao-sinusais.
 LUDB_SINUS_RHYTHMS = frozenset([
     "sinus rhythm",
     "sinus bradycardia",

@@ -192,14 +192,20 @@ pontuação final) e mapeado assim:
 
 | Classe | Ritmos |
 | --- | --- |
-| `0` (não-arritmia) | `sinus rhythm`, `sinus bradycardia`, `sinus tachycardia`, `sinus arrhythmia`, `irregular sinus rhythm` |
+| `0` (não-arritmia) | `sinus rhythm` |
 | `1` (arritmia) | qualquer outro |
 
-Bradicardia e taquicardia sinusais são anomalias de **frequência**, não de morfologia
-do batimento — uma CNN treinada no MIT-BIH para morfologia *beat-to-beat* classificaria
-esses batimentos como normais. Manter todos os ritmos sinusais na classe 0 alinha a
-semântica das duas bases. O resumo impresso lista a distribuição por ritmo com a classe
-atribuída, o que permite conferir se algum ritmo inesperado caiu na classe 1.
+É o análogo direto do critério do MIT-BIH, onde apenas o símbolo `N` recebe classe 0.
+O resumo impresso lista a distribuição por ritmo com a classe atribuída, o que permite
+conferir se algum ritmo inesperado caiu na classe 1.
+
+`--normal-rhythms sinus` troca para o agrupamento alternativo, que coloca todos os
+ritmos de origem sinusal (`sinus bradycardia`, `sinus tachycardia`, `sinus arrhythmia`,
+`irregular sinus rhythm`) na classe 0 e restringe a classe 1 aos ritmos não-sinusais.
+Sob esse agrupamento a classe 1 cai de 363 para 162 batimentos. A diferença está nos
+201 batimentos de ritmo sinusal não-normal, cuja distinção depende do intervalo RR —
+informação que a janela de um único batimento não carrega. Vale usá-lo como **análise
+de sensibilidade** no artigo.
 
 ### Formato do arquivo de saída
 

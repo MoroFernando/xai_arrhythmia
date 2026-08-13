@@ -82,6 +82,15 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--normal-rhythms",
+        choices=["strict", "sinus"],
+        default="strict",
+        help=(
+            "Ritmos mapeados para a classe 0. 'strict' usa apenas "
+            "'sinus rhythm'; 'sinus' agrupa todos os ritmos de origem sinusal."
+        ),
+    )
+    parser.add_argument(
         "--no-normalize",
         action="store_true",
         help="Desativa a Z-normalization por batimento.",
@@ -100,12 +109,19 @@ def main() -> int:
     if args.download:
         ludb.download_records(dest_dir=args.data_dir, lead=args.lead)
 
+    normal_rhythms = (
+        config.LUDB_SINUS_RHYTHMS
+        if args.normal_rhythms == "sinus"
+        else config.LUDB_NORMAL_RHYTHMS
+    )
+
     cfg = ludb.PreprocessConfig(
         lead=args.lead,
         fs_target=args.fs_target,
         window_left=args.window_left,
         window_right=args.window_right,
         center=args.center,
+        normal_rhythms=normal_rhythms,
         normalize=not args.no_normalize,
         data_dir=None if args.stream else args.data_dir,
     )

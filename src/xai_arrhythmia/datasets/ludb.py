@@ -48,7 +48,7 @@ class PreprocessConfig:
     fs_target: int = config.TARGET_FS
     window_left: int = config.WINDOW_LEFT
     window_right: int = config.WINDOW_RIGHT
-    sinus_rhythms: frozenset[str] = config.LUDB_SINUS_RHYTHMS
+    normal_rhythms: frozenset[str] = config.LUDB_NORMAL_RHYTHMS
     center: str = "qrs-peak"  # ou "qrs-midpoint"
     normalize: bool = True
     data_dir: Path | None = None  # None => leitura direta do PhysioNet
@@ -74,7 +74,7 @@ class PreprocessConfig:
                 "precedente e exigida apenas em registros que possuem ondas P "
                 "delimitadas (em fibrilacao/flutter atrial a onda P nao existe)"
             ),
-            "ritmos_classe_0": sorted(self.sinus_rhythms),
+            "ritmos_classe_0": sorted(self.normal_rhythms),
             "rotulo_por_batimento": (
                 "ritmo do registro propagado para todos os seus batimentos"
             ),
@@ -479,7 +479,7 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
 
     simbolos = np.asarray(ritmos)
     labels = np.asarray(
-        [0 if ritmo in cfg.sinus_rhythms else 1 for ritmo in ritmos], dtype=np.int64
+        [0 if ritmo in cfg.normal_rhythms else 1 for ritmo in ritmos], dtype=np.int64
     )
 
     mascara_p = np.stack(mascaras["p"]).astype(np.int8)
@@ -488,7 +488,11 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     mascara_clinica = np.clip(mascara_p + mascara_qrs + mascara_t, 0, 1).astype(np.int8)
 
     ritmos_nao_mapeados = sorted(
-        {ritmo for ritmo in ritmos_por_registro.values() if ritmo not in cfg.sinus_rhythms}
+        {
+            ritmo
+            for ritmo in ritmos_por_registro.values()
+            if ritmo not in cfg.normal_rhythms
+        }
     )
 
     metadata = cfg.to_metadata()
