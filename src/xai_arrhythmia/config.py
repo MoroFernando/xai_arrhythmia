@@ -21,6 +21,9 @@ OUTPUTS_DIR = PROJECT_ROOT / "outputs"
 MITBIH_RAW_DIR = RAW_DIR / "mitdb"
 MITBIH_PROCESSED_FILE = PROCESSED_DIR / "mitbih_beats.npz"
 
+LUDB_RAW_DIR = RAW_DIR / "ludb"
+LUDB_PROCESSED_FILE = PROCESSED_DIR / "ludb_beats.npz"
+
 # --------------------------------------------------------------------------
 # MIT-BIH Arrhythmia Database
 # --------------------------------------------------------------------------
@@ -58,6 +61,55 @@ NORMAL_SYMBOLS = frozenset(["N"])
 #: Agrupamento AAMI EC57 da classe "N": normal, bloqueios de ramo esquerdo e
 #: direito, escape atrial e escape nodal.
 NORMAL_SYMBOLS_AAMI = frozenset(["N", "L", "R", "e", "j"])
+
+# --------------------------------------------------------------------------
+# Lobachevsky University Electrocardiography Database (LUDB)
+# --------------------------------------------------------------------------
+#: Diretorio de leitura direta (rdrecord/rdann): os registros ficam em data/.
+LUDB_PN_DIR = "ludb/1.0.1/data"
+
+#: Slug da base para wfdb.dl_database. Sem a versao: o wfdb resolve a versao
+#: mais recente sozinho e a acrescenta a URL (passar "ludb/1.0.1" faria ele
+#: montar ".../1.0.1/1.0.1/" e falhar com 404). O RECORDS dessa raiz lista os
+#: registros como "data/1", entao os arquivos caem em "<dest_dir>/data/".
+LUDB_DB_DIR = "ludb"
+
+LUDB_FS = 500  # Hz
+
+#: Os 200 registros do LUDB (um por paciente).
+LUDB_RECORDS = [str(i) for i in range(1, 201)]
+
+#: Derivacao usada no LUDB. Os nomes de canal da base sao minusculos ("ii"),
+#: e o arquivo de anotacoes tem a derivacao como extensao (ex.: "1.ii").
+LUDB_LEAD = "ii"
+
+#: Simbolos de pico das tres estruturas delimitadas pelos especialistas.
+#: Cada onda aparece como a tripla "(" -> <pico> -> ")" na anotacao.
+LUDB_WAVE_SYMBOLS = {"p": "P", "N": "QRS", "t": "T"}
+
+#: O LUDB nao rotula batimento a batimento: o ritmo e um diagnostico do
+#: registro inteiro, gravado nos comentarios do header como
+#: "#Rhythm: Sinus bradycardia.". Esse rotulo e propagado para todos os
+#: batimentos segmentados daquele registro.
+LUDB_RHYTHM_FIELD = "Rhythm"
+
+#: Ritmos de origem sinusal, mapeados para a classe 0 (nao-arritmia).
+#: Bradicardia e taquicardia sinusais sao anomalias de FREQUENCIA, nao de
+#: morfologia do batimento: uma CNN treinada no MIT-BIH para morfologia
+#: beat-to-beat classificaria esses batimentos como normais. Manter todos os
+#: ritmos sinusais na classe 0 alinha a semantica das duas bases.
+LUDB_SINUS_RHYTHMS = frozenset([
+    "sinus rhythm",
+    "sinus bradycardia",
+    "sinus tachycardia",
+    "sinus arrhythmia",
+    "irregular sinus rhythm",
+])
+
+#: Frequencia de amostragem alvo do projeto. O LUDB (500 Hz) e reamostrado
+#: para esta taxa para que os batimentos fiquem na mesma escala temporal dos
+#: do MIT-BIH, requisito da validacao cross-dataset.
+TARGET_FS = MITBIH_FS
 
 # --------------------------------------------------------------------------
 # Segmentacao beat-to-beat

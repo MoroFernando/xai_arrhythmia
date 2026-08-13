@@ -7,9 +7,11 @@ da validacao cross-dataset descrita no artigo.
 
 from __future__ import annotations
 
+from math import gcd
 from typing import Iterable, Sequence
 
 import numpy as np
+from scipy.signal import resample_poly
 
 from . import config
 
@@ -102,6 +104,72 @@ def segment_beats(
         np.asarray(kept_symbols, dtype="<U2"),
         np.asarray(kept_peaks, dtype=np.int64),
     )
+
+
+def resample_signal(
+    signal: np.ndarray,
+    fs_original: int,
+    fs_target: int,
+) -> tuple[np.ndarray, float]:
+    """Reamostra o sinal para a frequencia alvo via filtro polifasico.
+
+    Args:
+        signal: sinal 1D.
+        fs_original: frequencia de amostragem do sinal.
+        fs_target: frequencia desejada.
+
+    Returns:
+        Tupla ``(sinal_reamostrado, razao)``, onde ``razao`` e o fator pelo
+        qual os indices temporais devem ser multiplicados.
+
+    Note:
+        ``resample_poly`` aplica o filtro anti-aliasing necessario na
+        decimacao 500 -> 360 Hz, o que uma interpolacao ingenua nao faria.
+    """
+    signal = np.asarray(signal, dtype=np.float32)
+    if fs_original == fs_target:
+        return signal, 1.0
+
+    divisor = gcd(fs_target, fs_original)
+    up = fs_target // divisor
+    down = fs_original // divisor
+    resampled = resample_poly(signal, up, down).astype(np.float32)
+    return resampled, fs_target / fs_original
+
+
+def rescale_positions(positions: Sequence[int], ratio: float) -> list[int]:
+    """Converte indices amostrais para a escala de um sinal reamostrado."""
+    return [int(round(position * ratio)) for position in positions]
+
+
+def build_region_mask(
+    regions: Iterable[tuple[int, int]],
+    window_start: int,
+    window_size: int,
+) -> np.ndarray:
+    """Monta a mascara binaria de regioes anotadas dentro de uma janela.
+
+    Args:
+        regions: pares ``(onset, offset)`` em coordenadas do sinal completo.
+        window_start: indice inicial da janela no sinal completo.
+        window_size: tamanho da janela em amostras.
+
+    Returns:
+        Vetor ``int8`` de tamanho ``window_size`` com 1 nas amostras cobertas.
+
+    Note:
+        Os limites do LUDB sao inclusivos nas duas pontas, entao o ``offset``
+        entra na mascara (dai o ``+ 1`` no recorte).
+    """
+    mask = np.zeros(window_size, dtype=np.int8)
+
+    for onset, offset in regions:
+        start = max(0, int(onset) - window_start)
+        end = min(window_size, int(offset) - window_start + 1)
+        if start < end:
+            mask[start:end] = 1
+
+    return mask
 
 
 def z_normalize_per_beat(X: np.ndarray, eps: float = 1e-8) -> np.ndarray:

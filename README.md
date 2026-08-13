@@ -25,13 +25,15 @@ framework-xai-arrhythmia/
 │   └── 01_exploracao_mitbih.ipynb
 ├── outputs/figures/             # Figuras geradas para o artigo
 ├── scripts/
-│   └── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
+│   ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
+│   └── preprocess_ludb.py       # CLI do pré-processamento do LUDB
 └── src/xai_arrhythmia/
     ├── config.py                # Constantes: janela, símbolos, caminhos
-    ├── signals.py               # Seleção de derivação, segmentação, normalização
+    ├── signals.py               # Derivação, reamostragem, segmentação, máscaras
     ├── io.py                    # Persistência .npz + metadados
     └── datasets/
-        └── mitbih.py            # Pipeline completo do MIT-BIH
+        ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
+        └── ludb.py              # Pipeline completo do LUDB (teste)
 ```
 
 ## Instalação
@@ -133,8 +135,93 @@ batimentos de um mesmo paciente nunca devem aparecer em treino e validação ao 
 tempo. `simbolos` preserva o tipo original da arritmia para a análise de falhas por
 classe na Etapa 4.
 
+## Pré-processamento do LUDB
+
+```bash
+python scripts/preprocess_ludb.py --download
+```
+
+Saída padrão: `data/processed/ludb_beats.npz`.
+
+O download baixa apenas as anotações da derivação usada — o LUDB tem um arquivo de
+anotação por derivação (12 por registro), e pegar as 12 traria ~2200 arquivos inúteis.
+Os arquivos caem em `data/raw/ludb/data/` (o `RECORDS` do PhysioNet já traz o prefixo
+`data/`); o pipeline resolve esse subdiretório sozinho.
+
+### O que o pipeline faz
+
+1. **Leitura via WFDB** — sinal das 12 derivações e a anotação de delineação, que no
+   LUDB tem a derivação como extensão do arquivo (`1.ii`).
+2. **Seleção da derivação II** — mesma função do MIT-BIH; os nomes de canal do LUDB
+   são minúsculos (`ii`) e a comparação é case-insensitive.
+3. **Extração das ondas** — a anotação segue o padrão `( → pico → )`, com `p` (onda P),
+   `N` (complexo QRS) e `t` (onda T). Cada onda vira a tripla `(onset, pico, offset)`.
+4. **Reamostragem 500 Hz → 360 Hz** — `resample_poly` (18/25) no sinal, e os índices
+   das anotações reescalados pela mesma razão. Sem isso os batimentos do LUDB teriam
+   duração diferente dos do MIT-BIH e o modelo veria morfologias distorcidas.
+5. **Segmentação beat-to-beat** — mesma janela de 234 amostras, centrada no **pico R**
+   (o pico anotado do complexo QRS), igual ao MIT-BIH.
+6. **Filtragem por completude** — o batimento só é mantido se o próprio QRS e a onda T
+   que o segue estiverem **integralmente** dentro da janela. A onda P precedente é
+   exigida apenas em registros que têm ondas P delimitadas (ver abaixo).
+7. **Z-normalization por batimento** — idêntica à do MIT-BIH.
+8. **Rótulo propagado** — o LUDB diagnostica o **registro**, não o batimento: o campo
+   `Rhythm:` do header é replicado em todos os batimentos daquele registro.
+
+### Por que a onda P é condicional
+
+Os 18 registros de **fibrilação e flutter atrial** do LUDB têm **zero ondas P
+anotadas**. Isso não é lacuna de anotação: a ausência de onda P *é a definição
+eletrofisiológica* da fibrilação atrial — o átrio não despolariza de forma organizada e
+a onda P é substituída por ondas fibrilatórias.
+
+Como esses são exatamente os registros da classe arritmia, exigir P de todo batimento
+zerava a classe 1 do conjunto de teste (`classe 1: 0 batimentos`), tornando impossível
+medir a fidelidade do Grad-CAM justamente na classe que o artigo investiga. O critério
+condicional recupera ~162 batimentos arrítmicos e mantém o rigor das três estruturas
+para os ritmos que de fato produzem onda P.
+
+Cada batimento carrega a flag `tem_onda_p`, e `regiao_p` recebe o sentinela `(-1, -1)`
+quando a onda não existe — assim a Etapa 4 pode excluir a P do denominador da métrica
+nesses casos, em vez de penalizar o Grad-CAM por não destacar uma estrutura ausente.
+
+### Rótulo binário
+
+O ritmo do header (`#Rhythm: Sinus bradycardia.`) é normalizado (minúsculas, sem
+pontuação final) e mapeado assim:
+
+| Classe | Ritmos |
+| --- | --- |
+| `0` (não-arritmia) | `sinus rhythm`, `sinus bradycardia`, `sinus tachycardia`, `sinus arrhythmia`, `irregular sinus rhythm` |
+| `1` (arritmia) | qualquer outro |
+
+Bradicardia e taquicardia sinusais são anomalias de **frequência**, não de morfologia
+do batimento — uma CNN treinada no MIT-BIH para morfologia *beat-to-beat* classificaria
+esses batimentos como normais. Manter todos os ritmos sinusais na classe 0 alinha a
+semântica das duas bases. O resumo impresso lista a distribuição por ritmo com a classe
+atribuída, o que permite conferir se algum ritmo inesperado caiu na classe 1.
+
+### Formato do arquivo de saída
+
+Além de `series`, `labels`, `simbolos` (ritmo propagado), `pacientes` e `r_peaks`:
+
+| Chave | Shape | Descrição |
+| --- | --- | --- |
+| `mascara_clinica` | `(n, 234)` `int8` | união P+QRS+T — o Ω_clin da métrica de fidelidade |
+| `mascara_p` / `mascara_qrs` / `mascara_t` | `(n, 234)` `int8` | máscara por estrutura, para análise separada |
+| `regiao_p` / `regiao_qrs` / `regiao_t` | `(n, 2)` `int64` | `(onset, offset)` das ondas **do próprio batimento**, relativos à janela; `(-1, -1)` quando a onda não existe |
+| `tem_onda_p` | `(n,)` `int8` | 1 se o batimento tem onda P delimitada, 0 em FA/flutter |
+
+As máscaras incluem toda onda anotada que cai na janela (inclusive de batimentos
+vizinhos), porque descrevem tudo que os especialistas delimitaram naquele trecho. Já as
+`regiao_*` guardam só as três ondas do batimento em questão — é o que permite, na
+Etapa 4, medir a ativação do Grad-CAM por estrutura individual.
+
+A cobertura média da `mascara_clinica` impressa no resumo é a **pontuação esperada ao
+acaso** da métrica de fidelidade: qualquer mapa de Grad-CAM aleatório atinge esse valor,
+então ele é o piso contra o qual o resultado do modelo deve ser comparado.
+
 ## Próximas etapas
 
-- [ ] Pré-processamento do LUDB com máscaras de *ground truth* P/QRS/T (`datasets/ludb.py`)
 - [ ] CNN 1D binária treinada no MIT-BIH (Etapa 3)
 - [ ] Grad-CAM 1D + métrica quantitativa de fidelidade (Etapa 4)
