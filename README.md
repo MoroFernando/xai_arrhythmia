@@ -2,14 +2,11 @@
 
 Projeto Transformador II — Bacharelado em Ciência da Computação, PUCPR (Turma A, Equipe 09).
 
-O objetivo é medir **quantitativamente** — e não por inspeção visual — se os mapas de
+O objetivo é medir **quantitativamente**,e não por inspeção visual,se os mapas de
 calor do Grad-CAM 1D destacam estruturas eletrofisiológicas reais do ECG (ondas P, T e
 complexo QRS). A validação é *cross-dataset*: a CNN 1D é treinada no **MIT-BIH
 Arrhythmia Database** e a explicabilidade é avaliada no **LUDB**, que fornece o
 *ground truth* das delimitações clínicas.
-
-> **Status atual: Etapa 2 (parcial)** — pré-processamento do MIT-BIH (conjunto de treino).
-> LUDB, CNN 1D e Grad-CAM ainda não implementados.
 
 ## Estrutura do repositório
 
@@ -38,7 +35,7 @@ framework-xai-arrhythmia/
 
 ## Instalação
 
-Crie o ambiente conda apenas com a versão do Python:
+Crie o ambiente conda com a versão do Python:
 
 ```bash
 conda create -n xai-arrhythmia python=3.11
