@@ -15,6 +15,12 @@ logs/**
 *.pth
 *.ckpt
 
+# Excecao: os modelos treinados (Etapa 3) sao versionados. O checkpoint tem
+# ~750 KB e vem acompanhado de metrics.json e history.csv — e o que permite
+# reproduzir os numeros do artigo e compartilhar a rede ja treinada.
+!outputs/models/
+!outputs/models/**
+
 # Python
 __pycache__/
 *.py[cod]

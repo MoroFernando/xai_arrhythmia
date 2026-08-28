@@ -19,15 +19,28 @@ framework-xai-arrhythmia/
 │   ├── interim/                 # Artefatos intermediários (não versionado)
 │   └── processed/               # Datasets .npz prontos (não versionado)
 ├── notebooks/
-│   └── 01_exploracao_mitbih.ipynb
+│   ├── 01_exploracao_mitbih.ipynb
+│   ├── 02_exploracao_ludb.ipynb
+│   ├── 03_analise_treino.ipynb  # Análises pós-treino (MIT-BIH)
+│   ├── 04_teste_ludb.ipynb      # Uso do modelo treinado no LUDB
+│   └── 05_gradcam_demo.ipynb    # Grad-CAM pré-extraído + anotações clínicas
 ├── outputs/figures/             # Figuras geradas para o artigo
+├── outputs/models/              # Checkpoints treinados (versionados)
 ├── scripts/
 │   ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
-│   └── preprocess_ludb.py       # CLI do pré-processamento do LUDB
+│   ├── preprocess_ludb.py       # CLI do pré-processamento do LUDB
+│   ├── train_cnn.py             # CLI do treino/validação no MIT-BIH
+│   ├── test_ludb.py             # CLI do teste no LUDB (carrega o modelo)
+│   └── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
 └── src/xai_arrhythmia/
-    ├── config.py                # Constantes: janela, símbolos, caminhos
-    ├── signals.py               # Derivação, reamostragem, segmentação, máscaras
-    ├── io.py                    # Persistência .npz + metadados
+    ├── config.py      # Constantes: janela, símbolos, caminhos, DS1/DS2
+    ├── signals.py     # Derivação, reamostragem, segmentação, máscaras
+    ├── io.py          # Persistência .npz + metadados
+    ├── splits.py      # Divisão inter-paciente
+    ├── metrics.py     # Métricas de classificação binária
+    ├── models.py      # Arquitetura CNN 1D
+    ├── training.py    # Loop de treino, checkpoint e avaliação
+    ├── gradcam.py     # Extração do Grad-CAM 1D (em lote ou 1 batimento)
     └── datasets/
         ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
         └── ludb.py              # Pipeline completo do LUDB (teste)
@@ -224,7 +237,250 @@ A cobertura média da `mascara_clinica` impressa no resumo é a **pontuação es
 acaso** da métrica de fidelidade: qualquer mapa de Grad-CAM aleatório atinge esse valor,
 então ele é o piso contra o qual o resultado do modelo deve ser comparado.
 
+## Treino da CNN 1D (Etapa 3)
+
+```bash
+python scripts/train_cnn.py
+```
+
+Saída padrão: `outputs/models/cnn1d_mitbih/` com `model.pt`, `metrics.json` e
+`history.csv`.
+
+Treino e teste são **scripts separados**, e a separação é metodológica, não
+apenas organizacional: `train_cnn.py` só enxerga o MIT-BIH, e o teste no LUDB
+(`test_ludb.py`, seção seguinte) só consome um modelo já salvo. Nenhuma decisão
+de treino pode ser tomada olhando o conjunto de teste.
+
+### Divisão inter-paciente
+
+O modelo é treinado **exclusivamente no MIT-BIH**. A base inteira é usada como
+conjunto de desenvolvimento e dividida **por registro**, nunca por batimento:
+batimentos do mesmo paciente compartilham morfologia, ruído de eletrodo e
+características do indivíduo — se caíssem em treino e validação ao mesmo tempo,
+a rede poderia acertar por reconhecer o paciente, e não a arritmia.
+
+O padrão é a partição de **de Chazal et al. (2004)**: DS1 (22 registros) treina,
+DS2 (22 registros) valida. Juntos são exatamente os 44 registros de
+`MITBIH_RECORDS` — os 4 com marcapasso já ficam de fora. `--split random`
+sorteia pacientes até atingir `--val-fraction` dos batimentos, útil como análise
+de sensibilidade. Em qualquer esquema o código **verifica e falha** se a
+interseção de registros entre as partições não for vazia.
+
+O conjunto de **teste** do projeto é o LUDB, e ele não participa de nenhuma
+decisão de treino. `--eval-ludb` apenas reporta, ao final, o desempenho
+cross-dataset com os pesos já congelados.
+
+### Arquitetura
+
+Quatro blocos `Conv1d → BatchNorm → ReLU → MaxPool → Dropout` (32, 64, 128, 128
+canais), Global Average Pooling e uma única camada linear com 1 logit de saída —
+187.425 parâmetros. Duas decisões são ditadas pela Etapa 4:
+
+- **`padding = kernel_size // 2`** em todas as convoluções, para que o passo `i`
+  do mapa de ativação continue correspondendo à mesma região do sinal, sem
+  deslocamento acumulado.
+- **GAP + uma linear**, que é a formulação direta do CAM/Grad-CAM: o peso da
+  classe multiplica o canal convolucional. Uma MLP densa no topo tornaria a
+  atribuição indireta.
+
+O pooling nos três primeiros blocos leva 234 → 117 → 58 → 29, então o Grad-CAM
+sai com 29 passos (~8 amostras, ~22 ms cada), resolução suficiente para separar
+P, QRS e T dentro do batimento. `model.last_conv` já aponta a camada alvo.
+
+### Desbalanceamento
+
+A classe arritmia é ~26% do MIT-BIH. A `BCEWithLogitsLoss` recebe
+`pos_weight = negativos/positivos` do conjunto de treino; sem isso a rede
+maximiza acurácia respondendo "normal" para quase tudo e derruba a
+sensibilidade, justamente a métrica que importa em triagem. `--sem-balanceamento`
+desativa.
+
+### Seleção de época e limiar de decisão
+
+A melhor época é a de maior acurácia balanceada na validação (`--criterio`
+troca o alvo), com early stopping por `--patience`. As métricas finais usam
+sempre os pesos dessa época, não os da última.
+
+O **limiar de decisão não é ajustável**: é sempre `config.DEFAULT_THRESHOLD`
+(0,5), o mesmo valor em treino, validação e teste no LUDB. O projeto não faz
+varredura de limiar por conjunto — isso abriria uma forma indireta de encaixar
+o modelo aos dados de teste, o mesmo problema que a divisão inter-paciente
+existe para evitar em relação aos pacientes.
+
+### Resultados no MIT-BIH (execução de referência)
+
+Números do checkpoint versionado em `outputs/models/cnn1d_mitbih/`: split
+DS1/DS2, semente 42, `--epochs 100 --patience 25`, limiar fixo 0,5.
+
+| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade | AUC-ROC |
+| --- | --- | --- | --- | --- | --- |
+| Treino (DS1) | 0,9862 | 0,9834 | 0,9778 | 0,9890 | 0,9978 |
+| Validação (DS2) | 0,8678 | 0,8534 | 0,8223 | 0,8844 | 0,9228 |
+
+A melhor época foi a **4**, mesmo com patience alto o suficiente para rodar até
+a 29 sem interromper antes. O treino continua reduzindo a perda a cada época
+(0,107 na época 4 → 0,028 na 29), mas a acurácia balanceada na validação nunca
+mais supera o pico da época 4 — oscila entre 0,70 e 0,82, sinal de overfitting
+ao DS1 depois desse ponto. **Mais épocas não ajudam aqui**; o gargalo é a
+capacidade de generalizar entre pacientes, não o tempo de treino. O notebook
+`03_analise_treino.ipynb` plota essa curva completa.
+
+A queda de DS1 para DS2 é o efeito esperado da divisão inter-paciente, e é o
+motivo de a literatura *intra-patient* reportar >99%.
+
+Os números variam ligeiramente entre execuções mesmo com a semente fixa: o
+cuDNN não é determinístico por padrão e o projeto não ativa o modo
+determinístico, cujo custo em velocidade não compensa aqui.
+
+### Formato do checkpoint
+
+`model.pt` é autocontido — pesos, hiperparâmetros da arquitetura, divisão usada
+e todas as métricas:
+
+```python
+from xai_arrhythmia.training import load_checkpoint
+
+modelo, ckpt = load_checkpoint("outputs/models/cnn1d_mitbih/model.pt")
+print(ckpt["threshold"], ckpt["info"]["metrics"]["validacao"])
+```
+
+`metrics.json` traz o mesmo conteúdo em texto (inclusive a lista de registros de
+cada partição) e `history.csv` a curva por época.
+
+## Teste no LUDB (cross-dataset)
+
+```bash
+python scripts/test_ludb.py
+```
+
+O script **não treina nada**: carrega o checkpoint, congela os pesos e mede o
+desempenho no LUDB. O limiar não é reajustado aqui — é o mesmo 0,5 fixo do
+treino e da validação.
+
+Saída em `outputs/models/<run>/teste_ludb/`:
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `ludb_metrics.json` | métricas, quebra por ritmo e a proveniência do modelo |
+| `ludb_predictions.npz` | `y_true`, `y_score`, `y_pred`, `pacientes`, `ritmos` batimento a batimento |
+
+O `.npz` de predições é o que a Etapa 4 consome: alinhado por índice com as
+máscaras clínicas do LUDB, permite cruzar o Grad-CAM com as anotações de P, QRS
+e T beat a beat, inclusive nos batimentos em que o modelo erra.
+
+### Resultado
+
+| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade | AUC-ROC |
+| --- | --- | --- | --- | --- | --- |
+| LUDB @ 0,50 | 0,7085 | 0,6012 | 0,3388 | 0,8636 | 0,6051 |
+
+A quebra por ritmo explica o número agregado:
+
+| Ritmo | n | Classe | Acerto | Score médio |
+| --- | --- | --- | --- | --- |
+| sinus rhythm | 865 | 0 | 0,864 | 0,189 |
+| atrial fibrillation | 126 | 1 | 0,516 | 0,544 |
+| sinus bradycardia | 75 | 1 | 0,080 | 0,140 |
+| sinus arrhythmia | 64 | 1 | 0,047 | 0,076 |
+| sinus tachycardia | 49 | 1 | 0,265 | 0,268 |
+| atrial flutter, typical | 36 | 1 | 0,944 | 0,889 |
+| irregular sinus rhythm | 13 | 1 | 0,154 | 0,342 |
+
+O modelo responde bem onde a arritmia **altera a morfologia** do batimento
+(flutter 0,94; fibrilação 0,52) e falha onde ela é uma anomalia de
+**frequência** (bradicardia, taquicardia e arritmia sinusal, 188 batimentos com
+score médio abaixo de 0,27). Isso não é acaso de treino: esses batimentos são
+morfologicamente normais, e distingui-los exige o intervalo RR — informação que
+a janela de um único batimento, por construção, não carrega. É o mesmo ponto
+que motiva a análise de sensibilidade com `--normal-rhythms sinus` no
+pré-processamento do LUDB.
+
+Vale registrar que o teste cross-dataset é o cenário adverso por definição: as
+bases diferem em população, equipamento e — sobretudo — em critério de rótulo
+(o MIT-BIH rotula o *batimento*, o LUDB rotula o *ritmo do registro inteiro*).
+Para o objeto do artigo isso é matéria-prima, não defeito: a Etapa 4 investiga
+se o Grad-CAM aponta estruturas eletrofisiológicas reais **mesmo quando a
+predição erra** — um falso negativo cujo mapa destaca corretamente QRS e T
+indica erro de decisão, não de foco.
+
+## Extração do Grad-CAM (Etapa 4)
+
+```bash
+python scripts/extract_gradcam.py
+```
+
+Terceiro script da cadeia, depois de `train_cnn.py` e `test_ludb.py`, mas
+**autocontido**: não depende dos outros dois terem rodado, só do checkpoint e
+do dataset do LUDB. A predição usada para os campos `y_pred`/`y_score` é
+recomputada aqui (mesmo checkpoint, mesmo limiar fixo, sem aleatoriedade em
+`eval()`), então sai idêntica à de `test_ludb.py` — os dois arquivos ficam
+alinhados por índice sem precisar um do outro.
+
+A lógica do Grad-CAM mora em [`xai_arrhythmia/gradcam.py`](src/xai_arrhythmia/gradcam.py),
+não no script nem no notebook: é o mesmo padrão do resto do projeto
+(`metrics.py`, `training.py`, `signals.py`) — uma função por conceito,
+reaproveitada por CLI, script e notebook em vez de reimplementada em cada um.
+
+### Grad-CAM em lote
+
+`gradcam.grad_cam_1d` extrai o mapa de ativação de `modelo.last_conv` via
+hooks de forward/backward, e aceita tanto um único batimento quanto um lote
+inteiro — o LUDB inteiro (1228 batimentos) processa em ~2 s na GPU, numa
+única passada por lote (`--batch-size`, padrão 256), sem laço em Python por
+batimento.
+
+Isso funciona porque o modelo roda sempre em modo `eval()`: BatchNorm usa
+estatísticas fixas (não as do lote) e Dropout vira identidade, então a saída
+de uma amostra do lote não depende de nenhuma outra. Somar os logits do lote e
+chamar um único `.backward()` produz, para cada amostra, exatamente o mesmo
+gradiente que um `.backward()` individual — verificado no próprio módulo
+(diferença de ~1e-7, ruído de ponto flutuante, entre as duas formas de
+calcular).
+
+### Formato da saída
+
+Em `outputs/models/<run>/gradcam_ludb/`:
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `ludb_gradcam.npz` | `cam_raw` `(n, 29)`, `cam_interp` `(n, 234)`, `y_true`, `y_pred`, `y_score`, `pacientes`, `ritmos`, `threshold` |
+| `ludb_gradcam.json` | checkpoint, dataset, camada alvo, dimensões, método de interpolação e as métricas de referência |
+
+`cam_raw` é o mapa no comprimento nativo da rede (`L' = 29`, a saída de
+`modelo.last_conv`); `cam_interp` já vem reamostrado para o tamanho da janela
+do batimento (234 amostras) via `gradcam.interpola_cam` — interpolação linear
+simples sobre o eixo `[0, 1]`, suficiente dado o tamanho pequeno do batimento
+(~650 ms). O arquivo é autocontido: alinhado por índice com o dataset do LUDB
+e com `ludb_predictions.npz`, mas não depende deste para ser lido.
+
+Essa matriz `cam_interp` é a matéria-prima que falta para fechar a Etapa 4:
+cruzá-la com `ludb["mascara_clinica"]` — a máscara booleana `(n, 234)` que já
+une P, QRS e T amostra a amostra — reduz a comparação visual do notebook
+`05_gradcam_demo.ipynb` a um número por batimento (por exemplo, a fração da
+energia do mapa dentro da região clinicamente anotada), o que ainda falta
+implementar.
+
+## Notebooks
+
+| Notebook | Conteúdo |
+| --- | --- |
+| `01_exploracao_mitbih.ipynb` | Exploração da base de treino |
+| `02_exploracao_ludb.ipynb` | Exploração da base de teste e das anotações clínicas |
+| `03_analise_treino.ipynb` | Análise pós-treino: curvas por época, matriz de confusão, falhas por tipo de batimento e dispersão entre pacientes |
+| `04_teste_ludb.ipynb` | Uso do modelo treinado: carrega o checkpoint, avalia o LUDB, quebra por ritmo e plota batimentos com as regiões P/QRS/T sombreadas |
+| `05_gradcam_demo.ipynb` | Carrega o Grad-CAM já extraído (`ludb_gradcam.npz`) e plota, numa grade 2×2, o batimento mais confiante de cada quadrante da matriz de confusão (VP/VN/FP/FN) com o ECG colorido pela ativação e as regiões de P/QRS/T sombreadas |
+
+Os notebooks 03 e 04 são a versão exploratória do que os dois scripts fazem em
+lote — o 04, em particular, demonstra o caminho de quem recebe apenas o `.pt` e
+quer rodar o modelo em dados novos. O 05 é a versão visual do que
+`extract_gradcam.py` faz em lote.
+
 ## Próximas etapas
 
-- [ ] CNN 1D binária treinada no MIT-BIH (Etapa 3)
-- [ ] Grad-CAM 1D + métrica quantitativa de fidelidade (Etapa 4)
+- [x] CNN 1D binária treinada no MIT-BIH (Etapa 3)
+- [x] Extração do Grad-CAM 1D no LUDB (Etapa 4, parte 1)
+- [ ] Métrica quantitativa de fidelidade: cruzar `cam_interp` com
+      `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t` num número por
+      batimento (Etapa 4, parte 2)
+- [ ] Análise de falhas da métrica por ritmo e por tipo de arritmia (Etapa 4)
+- [ ] Análise crítica e redação do artigo (Etapa 5)

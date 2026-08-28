@@ -1,0 +1,28 @@
+{
+  "criado_em": "2026-08-27T18:32:38+00:00",
+  "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
+  "checkpoint": "C:\\PUC\\TCC\\xai_arrhythmia\\outputs\\models\\cnn1d_mitbih\\model.pt",
+  "dataset": "C:\\PUC\\TCC\\xai_arrhythmia\\data\\processed\\ludb_beats.npz",
+  "camada_alvo": "Conv1d(128, 128, kernel_size=(7,), stride=(1,), padding=(3,), bias=False)",
+  "n_batimentos": 1228,
+  "comprimento_cam_raw": 29,
+  "tamanho_janela": 234,
+  "interpolacao": "linear (np.interp sobre eixo normalizado [0, 1])",
+  "threshold": 0.5,
+  "metrics_referencia": {
+    "tp": 123,
+    "tn": 747,
+    "fp": 118,
+    "fn": 240,
+    "n": 1228,
+    "threshold": 0.5,
+    "acuracia": 0.7084690553745928,
+    "acuracia_balanceada": 0.6012133951177566,
+    "sensibilidade": 0.33884297520661155,
+    "especificidade": 0.8635838150289017,
+    "precisao": 0.5103734439834025,
+    "f1": 0.40728476821192056,
+    "auc_roc": 0.6050637749008742
+  },
+  "observacao": "cam_raw e cam_interp estao alinhados por indice com o dataset do LUDB e com outputs/models/<run>/teste_ludb/ludb_predictions.npz (mesma ordem, mesmo checkpoint, mesmo limiar fixo)."
+}

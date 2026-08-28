@@ -134,3 +134,38 @@ LEAD_ALIASES = {
     "MLII": ("MLII", "II", "ML II"),
     "II": ("II", "MLII", "ML II"),
 }
+
+# --------------------------------------------------------------------------
+# Etapa 3 — divisao inter-paciente e treino
+# --------------------------------------------------------------------------
+MODELS_DIR = OUTPUTS_DIR / "models"
+
+#: Particao inter-paciente classica de de Chazal et al. (2004), adotada como
+#: padrao de facto na literatura do MIT-BIH. DS1 e DS2 tem 22 registros cada,
+#: com distribuicoes de classe comparaveis, e juntos formam exatamente os 44
+#: registros de MITBIH_RECORDS (os 4 com marcapasso ja ficam de fora).
+#:
+#: Aqui DS1 vira treino e DS2 vira validacao: o conjunto de TESTE do projeto e
+#: o LUDB, base independente. A divisao por registro garante que nenhum
+#: batimento de um mesmo paciente apareca nos dois conjuntos — sem isso a
+#: metrica fica inflada por memorizacao da morfologia individual.
+MITBIH_DS1 = [
+    "101", "106", "108", "109", "112", "114", "115", "116", "118", "119",
+    "122", "124", "201", "203", "205", "207", "208", "209", "215", "220",
+    "223", "230",
+]
+
+MITBIH_DS2 = [
+    "100", "103", "105", "111", "113", "117", "121", "123", "200", "202",
+    "210", "212", "213", "214", "219", "221", "222", "228", "231", "232",
+    "233", "234",
+]
+
+#: Semente padrao para todo o pipeline de treino (numpy, random e torch).
+RANDOM_SEED = 42
+
+#: Limiar de decisao fixo do projeto. Nao e otimizado na validacao: o score
+#: (sigmoid do logit) e binarizado sempre neste valor, em treino, validacao e
+#: teste no LUDB. Ajustar o limiar por conjunto abriria uma forma indireta de
+#: encaixar o modelo aos dados de teste.
+DEFAULT_THRESHOLD = 0.5
