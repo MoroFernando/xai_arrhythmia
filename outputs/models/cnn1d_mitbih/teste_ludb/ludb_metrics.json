@@ -1,201 +1,168 @@
 {
-  "criado_em": "2026-08-27T17:51:45+00:00",
+  "criado_em": "2026-08-30T16:15:23+00:00",
   "etapa": "3 - teste cross-dataset (LUDB)",
-  "checkpoint": "C:\\PUC\\TCC\\xai_arrhythmia\\outputs\\models\\cnn1d_mitbih\\model.pt",
-  "dataset_teste": "C:\\PUC\\TCC\\xai_arrhythmia\\data\\processed\\ludb_beats.npz",
+  "checkpoint": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\outputs\\models\\cnn1d_mitbih\\model.pt",
+  "dataset_teste": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\data\\processed\\ludb_beats.npz",
   "threshold": 0.5,
   "label_encoding": {
     "0": "nao-arritmia",
     "1": "arritmia"
   },
   "metrics": {
-    "tp": 123,
-    "tn": 747,
-    "fp": 118,
-    "fn": 240,
+    "tp": 94,
+    "tn": 709,
+    "fp": 156,
+    "fn": 269,
     "n": 1228,
     "threshold": 0.5,
-    "acuracia": 0.7084690553745928,
-    "acuracia_balanceada": 0.6012133951177566,
-    "sensibilidade": 0.33884297520661155,
-    "especificidade": 0.8635838150289017,
-    "precisao": 0.5103734439834025,
-    "f1": 0.40728476821192056,
-    "auc_roc": 0.6050637749008742
+    "acuracia": 0.6539087947882736,
+    "acuracia_balanceada": 0.5393031736174143,
+    "sensibilidade": 0.25895316804407714,
+    "especificidade": 0.8196531791907514,
+    "precisao": 0.376,
+    "f1": 0.3066884176182708,
+    "auc_roc": 0.5714517747097885
   },
   "por_ritmo": [
     {
       "grupo": "sinus rhythm",
       "n": 865,
       "classe_verdadeira": 0,
-      "acertos": 747,
-      "taxa_acerto": 0.8635838150289017,
-      "score_medio": 0.18911067435310647
+      "acertos": 709,
+      "taxa_acerto": 0.8196531791907514,
+      "score_medio": 0.18496597731498793
     },
     {
       "grupo": "atrial fibrillation",
       "n": 126,
       "classe_verdadeira": 1,
-      "acertos": 65,
-      "taxa_acerto": 0.5158730158730159,
-      "score_medio": 0.5442956076437858
+      "acertos": 50,
+      "taxa_acerto": 0.3968253968253968,
+      "score_medio": 0.4220318327626367
     },
     {
       "grupo": "sinus bradycardia",
       "n": 75,
       "classe_verdadeira": 1,
-      "acertos": 6,
-      "taxa_acerto": 0.08,
-      "score_medio": 0.14020887843100355
+      "acertos": 7,
+      "taxa_acerto": 0.09333333333333334,
+      "score_medio": 0.101361873880055
     },
     {
       "grupo": "sinus arrhythmia",
       "n": 64,
       "classe_verdadeira": 1,
-      "acertos": 3,
-      "taxa_acerto": 0.046875,
-      "score_medio": 0.07546891686797608
+      "acertos": 15,
+      "taxa_acerto": 0.234375,
+      "score_medio": 0.2403811148827342
     },
     {
       "grupo": "sinus tachycardia",
       "n": 49,
       "classe_verdadeira": 1,
-      "acertos": 13,
-      "taxa_acerto": 0.2653061224489796,
-      "score_medio": 0.2679454087308247
+      "acertos": 8,
+      "taxa_acerto": 0.16326530612244897,
+      "score_medio": 0.16947823524717778
     },
     {
       "grupo": "atrial flutter, typical",
       "n": 36,
       "classe_verdadeira": 1,
-      "acertos": 34,
-      "taxa_acerto": 0.9444444444444444,
-      "score_medio": 0.8889550844000446
+      "acertos": 9,
+      "taxa_acerto": 0.25,
+      "score_medio": 0.25482499166340383
     },
     {
       "grupo": "irregular sinus rhythm",
       "n": 13,
       "classe_verdadeira": 1,
-      "acertos": 2,
-      "taxa_acerto": 0.15384615384615385,
-      "score_medio": 0.341833321377635
+      "acertos": 5,
+      "taxa_acerto": 0.38461538461538464,
+      "score_medio": 0.3939865111169638
     }
   ],
   "treino_info": {
     "split": {
       "treino": {
-        "n_batimentos": 51003,
-        "n_pacientes": 22,
+        "n_batimentos": 81287,
+        "n_pacientes": 36,
         "pacientes": [
+          "100",
           "101",
+          "103",
+          "105",
           "106",
           "108",
           "109",
           "112",
+          "113",
           "114",
           "115",
           "116",
+          "117",
           "118",
           "119",
+          "121",
           "122",
+          "123",
           "124",
+          "200",
           "201",
+          "202",
           "203",
           "205",
           "207",
           "208",
           "209",
-          "215",
-          "220",
-          "223",
-          "230"
-        ],
-        "classe_0": 38089,
-        "classe_1": 12914,
-        "prevalencia_classe_1": 0.2532
-      },
-      "validacao": {
-        "n_batimentos": 49692,
-        "n_pacientes": 22,
-        "pacientes": [
-          "100",
-          "103",
-          "105",
-          "111",
-          "113",
-          "117",
-          "121",
-          "123",
-          "200",
-          "202",
-          "210",
           "212",
           "213",
           "214",
-          "219",
-          "221",
           "222",
+          "223",
           "228",
-          "231",
+          "230",
           "232",
-          "233",
           "234"
         ],
-        "classe_0": 36428,
-        "classe_1": 13264,
-        "prevalencia_classe_1": 0.2669
+        "prevalencia_classe_1": 0.2583
+      },
+      "validacao": {
+        "n_batimentos": 19408,
+        "n_pacientes": 8,
+        "pacientes": [
+          "111",
+          "210",
+          "215",
+          "219",
+          "220",
+          "221",
+          "231",
+          "233"
+        ],
+        "prevalencia_classe_1": 0.2672
       }
     },
     "train_config": {
-      "epochs": 100,
-      "batch_size": 256,
+      "epochs": 20,
+      "batch_size": 64,
       "lr": 0.001,
-      "weight_decay": 0.0001,
-      "patience": 25,
-      "criterio_selecao": "acuracia_balanceada",
-      "balancear_classes": true,
-      "split_scheme": "ds1ds2",
-      "val_fraction": 0.3,
-      "seed": 42,
-      "device": "auto",
-      "num_workers": 0
+      "split_scheme": "StratifiedGroupKFold(n_splits=5) fold 0",
+      "seed": 0
     },
     "metrics_mitbih": {
       "treino": {
-        "tp": 12627,
-        "tn": 37670,
-        "fp": 419,
-        "fn": 287,
-        "n": 51003,
-        "threshold": 0.5,
-        "acuracia": 0.9861576769993922,
-        "acuracia_balanceada": 0.9833877528260646,
-        "sensibilidade": 0.9777760569924113,
-        "especificidade": 0.988999448659718,
-        "precisao": 0.967882875977311,
-        "f1": 0.972804314329738,
-        "auc_roc": 0.9978113481863978
+        "acuracia": 0.9974288631638515,
+        "loss": 0.007242418475380945
       },
       "validacao": {
-        "tp": 10907,
-        "tn": 32218,
-        "fp": 4210,
-        "fn": 2357,
-        "n": 49692,
-        "threshold": 0.5,
-        "acuracia": 0.8678459309345569,
-        "acuracia_balanceada": 0.8533652623487309,
-        "sensibilidade": 0.8223009650180941,
-        "especificidade": 0.8844295596793675,
-        "precisao": 0.7215055897334127,
-        "f1": 0.7686128043409323,
-        "auc_roc": 0.9227992747694843
+        "acuracia": 0.7610263808738664,
+        "acuracia_balanceada": 0.741912535083985,
+        "sensibilidade": 0.7008678881388621,
+        "especificidade": 0.7829571820291078,
+        "loss": 1.1995176111777164
       },
-      "threshold": 0.5,
-      "criterio_selecao": "acuracia_balanceada",
-      "melhor_epoca": 4,
-      "epocas_executadas": 29,
-      "duracao_s": 121.8
+      "epocas_executadas": 20,
+      "melhor_epoca": 20
     }
   },
   "observacao": "Pesos e limiar congelados; nenhuma decisao de treino foi tomada com base neste conjunto."

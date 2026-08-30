@@ -1,0 +1,55 @@
+{
+  "criado_em": "2026-08-30T16:15:30+00:00",
+  "etapa": "4 - fidelidade quantitativa do Grad-CAM (LUDB)",
+  "gradcam": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\outputs\\models\\cnn1d_mitbih\\gradcam_ludb\\ludb_gradcam.npz",
+  "dataset": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\data\\processed\\ludb_beats.npz",
+  "n_batimentos": 1228,
+  "tamanho_janela": 234,
+  "limiar_cam": 0.5,
+  "metrica": "IoU entre (cam_interp >= limiar_cam) e a mascara clinica (uniao P+QRS+T), batimento a batimento; uniao vazia -> ignorado",
+  "geral": {
+    "n": 1228,
+    "n_avaliados": 1228,
+    "iou_medio": 0.07673290917967396,
+    "iou_mediana": 0.07092198581560284,
+    "iou_pred_0": 0.08015073909061589,
+    "iou_pred_1": 0.06336235856806917,
+    "iou_real_0": 0.08123649794972221,
+    "iou_real_1": 0.06600121693148736,
+    "cobertura_acaso": 0.5765402711656783,
+    "acima_do_acaso": -0.49980736198600434
+  },
+  "por_estrutura": {
+    "P (mascara_p)": {
+      "n": 1228,
+      "n_avaliados": 1176,
+      "iou_medio": 0.010897084524708403,
+      "iou_mediana": 0.0,
+      "iou_pred_0": 0.008559120617334487,
+      "iou_pred_1": 0.021589668271702854,
+      "iou_real_0": 0.012772730962023577,
+      "iou_real_1": 0.005770317596046929
+    },
+    "QRS (mascara_qrs)": {
+      "n": 1228,
+      "n_avaliados": 1228,
+      "iou_medio": 0.22122251794028408,
+      "iou_mediana": 0.21748310810810811,
+      "iou_pred_0": 0.24875436030341458,
+      "iou_pred_1": 0.11351795061571755,
+      "iou_real_0": 0.24738957904917097,
+      "iou_real_1": 0.1588685017992726
+    },
+    "T (mascara_t)": {
+      "n": 1228,
+      "n_avaliados": 1228,
+      "iou_medio": 0.026576791746660555,
+      "iou_mediana": 0.0,
+      "iou_pred_0": 0.021896700379106585,
+      "iou_pred_1": 0.044885309176531704,
+      "iou_real_0": 0.025899553925900768,
+      "iou_real_1": 0.028190595369132234
+    }
+  },
+  "observacao": "iou_por_batimento em ludb_fidelity.npz esta alinhado por indice com ludb_gradcam.npz e com o dataset do LUDB."
+}

@@ -36,7 +36,7 @@ framework-xai-arrhythmia/
 │   ├── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
 │   └── fidelity_ludb.py         # CLI do IoU de fidelidade (Grad-CAM x anotação clínica)
 └── src/xai_arrhythmia/
-    ├── config.py      # Constantes: janela, símbolos, caminhos, DS1/DS2
+    ├── config.py      # Constantes: janela, símbolos, caminhos
     ├── signals.py     # Derivação, reamostragem, segmentação, máscaras
     ├── io.py          # Persistência .npz + metadados
     ├── splits.py      # Divisão inter-paciente
@@ -265,93 +265,85 @@ batimentos do mesmo paciente compartilham morfologia, ruído de eletrodo e
 características do indivíduo — se caíssem em treino e validação ao mesmo tempo,
 a rede poderia acertar por reconhecer o paciente, e não a arritmia.
 
-O padrão é a partição de **de Chazal et al. (2004)**: DS1 (22 registros) treina,
-DS2 (22 registros) valida. Juntos são exatamente os 44 registros de
-`MITBIH_RECORDS` — os 4 com marcapasso já ficam de fora. `--split random`
-sorteia pacientes até atingir `--val-fraction` dos batimentos, útil como análise
-de sensibilidade. Em qualquer esquema o código **verifica e falha** se a
-interseção de registros entre as partições não for vazia.
+A divisão é feita com `StratifiedGroupKFold` (`--n-splits`, padrão 5),
+agrupando por `pacientes` e estratificando por `labels`; o fold 0 (`--fold`)
+é usado como partição treino/validação. Na execução de referência isso dá 36
+registros no treino (81 287 batimentos, 25,8 % de arritmia) e 8 na validação
+(19 408 batimentos, 26,7 %). O código **verifica e falha** se algum registro
+aparecer nos dois conjuntos.
 
 O conjunto de **teste** do projeto é o LUDB, e ele não participa de nenhuma
-decisão de treino. `--eval-ludb` apenas reporta, ao final, o desempenho
-cross-dataset com os pesos já congelados.
+decisão de treino.
 
 ### Arquitetura
 
-Quatro blocos `Conv1d → BatchNorm → ReLU → MaxPool → Dropout` (32, 64, 128, 128
-canais), Global Average Pooling e uma única camada linear com 1 logit de saída —
-187.425 parâmetros. Duas decisões são ditadas pela Etapa 4:
+`CNN1D_Arritmia` (em `scripts/model_gradcam.py`) — **121 633 parâmetros**:
 
-- **`padding = kernel_size // 2`** em todas as convoluções, para que o passo `i`
-  do mapa de ativação continue correspondendo à mesma região do sinal, sem
-  deslocamento acumulado.
-- **GAP + uma linear**, que é a formulação direta do CAM/Grad-CAM: o peso da
-  classe multiplica o canal convolucional. Uma MLP densa no topo tornaria a
-  atribuição indireta.
+| Camada | Saída |
+| --- | --- |
+| `Conv1d(1→16, k=7, pad=3)` + ReLU + `MaxPool1d(2)` | `(16, 117)` |
+| `Conv1d(16→32, k=5, pad=2)` + ReLU  ← *camada alvo do Grad-CAM* | `(32, 117)` |
+| `MaxPool1d(2)` + `flatten` | `1856` |
+| `Linear(1856→64)` + ReLU | `64` |
+| `Linear(64→1)` + **sigmoide** | `1` (prob. de arritmia) |
 
-O pooling nos três primeiros blocos leva 234 → 117 → 58 → 29, então o Grad-CAM
-sai com 29 passos (~8 amostras, ~22 ms cada), resolução suficiente para separar
-P, QRS e T dentro do batimento. `model.last_conv` já aponta a camada alvo.
+O hook de Grad-CAM é registrado dentro do `forward`, sobre a ativação de
+`conv2` (comprimento nativo de 117 passos, ~2 amostras / ~5,5 ms cada); o mapa
+é depois reamostrado para as 234 amostras da janela.
 
 ### Desbalanceamento
 
-A classe arritmia é ~26% do MIT-BIH. A `BCEWithLogitsLoss` recebe
-`pos_weight = negativos/positivos` do conjunto de treino; sem isso a rede
-maximiza acurácia respondendo "normal" para quase tudo e derruba a
-sensibilidade, justamente a métrica que importa em triagem. `--sem-balanceamento`
-desativa.
+**Não há reponderação de classe** — a perda é `binary_cross_entropy` sobre a
+sigmoide, sem `pos_weight`. Com a classe arritmia em ~26 % do MIT-BIH, isso
+empurra a rede a favorecer a classe majoritária, e é parte da explicação para
+a sensibilidade baixa no teste cross-dataset (ver seção do LUDB).
 
 ### Seleção de época e limiar de decisão
 
-A melhor época é a de maior acurácia balanceada na validação (`--criterio`
-troca o alvo), com early stopping por `--patience`. As métricas finais usam
-sempre os pesos dessa época, não os da última.
+**Não há seleção de época nem early stopping**: o treino roda um número fixo de
+épocas (`--epochs`, padrão 20) e as métricas finais usam os pesos da **última**
+época.
 
-O **limiar de decisão não é ajustável**: é sempre `config.DEFAULT_THRESHOLD`
-(0,5), o mesmo valor em treino, validação e teste no LUDB. O projeto não faz
-varredura de limiar por conjunto — isso abriria uma forma indireta de encaixar
-o modelo aos dados de teste, o mesmo problema que a divisão inter-paciente
-existe para evitar em relação aos pacientes.
+O **limiar de decisão não é ajustável**: é sempre `0,5`
+(`model_gradcam.DEFAULT_THRESHOLD`), o mesmo valor em treino, validação e teste
+no LUDB. O projeto não faz varredura de limiar por conjunto — isso abriria uma
+forma indireta de encaixar o modelo aos dados de teste.
 
 ### Resultados no MIT-BIH (execução de referência)
 
-Números do checkpoint versionado em `outputs/models/cnn1d_mitbih/`: split
-DS1/DS2, semente 42, `--epochs 100 --patience 25`, limiar fixo 0,5.
+Checkpoint em `outputs/models/cnn1d_mitbih/`: `StratifiedGroupKFold(5)` fold 0,
+semente 0, `--epochs 20`, limiar fixo 0,5.
 
-| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade | AUC-ROC |
-| --- | --- | --- | --- | --- | --- |
-| Treino (DS1) | 0,9862 | 0,9834 | 0,9778 | 0,9890 | 0,9978 |
-| Validação (DS2) | 0,8678 | 0,8534 | 0,8223 | 0,8844 | 0,9228 |
+| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade |
+| --- | --- | --- | --- | --- |
+| Treino | 0,9974 | — | — | — |
+| Validação | 0,7610 | 0,7419 | 0,7009 | 0,7830 |
 
-A melhor época foi a **4**, mesmo com patience alto o suficiente para rodar até
-a 29 sem interromper antes. O treino continua reduzindo a perda a cada época
-(0,107 na época 4 → 0,028 na 29), mas a acurácia balanceada na validação nunca
-mais supera o pico da época 4 — oscila entre 0,70 e 0,82, sinal de overfitting
-ao DS1 depois desse ponto. **Mais épocas não ajudam aqui**; o gargalo é a
-capacidade de generalizar entre pacientes, não o tempo de treino. O notebook
-`03_analise_treino.ipynb` plota essa curva completa.
-
-A queda de DS1 para DS2 é o efeito esperado da divisão inter-paciente, e é o
-motivo de a literatura *intra-patient* reportar >99%.
-
-Os números variam ligeiramente entre execuções mesmo com a semente fixa: o
-cuDNN não é determinístico por padrão e o projeto não ativa o modo
-determinístico, cujo custo em velocidade não compensa aqui.
+Sem seleção de época, os números são os da época 20. A acurácia balanceada na
+validação **atinge o pico na época 2 (0,897) e cai depois** — na época 20 já
+está em 0,742, enquanto a acurácia de treino chega a 0,997. É overfitting claro:
+a rede não tem regularização (sem BatchNorm, sem dropout, sem weight decay) e o
+treino não para no melhor ponto. O notebook `03_analise_treino.ipynb` plota a
+curva completa.
 
 ### Formato do checkpoint
 
-`model.pt` é autocontido — pesos, hiperparâmetros da arquitetura, divisão usada
-e todas as métricas:
+`model.pt` é autocontido — pesos, `input_length`, limiar e o bloco `info`
+(arquitetura, `train_config`, divisão, `val_idx` e métricas):
 
 ```python
-from xai_arrhythmia.training import load_checkpoint
+import sys
+from xai_arrhythmia import config
+
+sys.path.insert(0, str(config.PROJECT_ROOT / "scripts"))
+from model_gradcam import load_checkpoint
 
 modelo, ckpt = load_checkpoint("outputs/models/cnn1d_mitbih/model.pt")
 print(ckpt["threshold"], ckpt["info"]["metrics"]["validacao"])
 ```
 
-`metrics.json` traz o mesmo conteúdo em texto (inclusive a lista de registros de
-cada partição) e `history.csv` a curva por época.
+`metrics.json` traz o mesmo conteúdo em texto (sem o `val_idx`, que fica só no
+`.pt` — é o que os notebooks recarregam) e `history.csv` a curva por época.
 
 ## Teste no LUDB (cross-dataset)
 
@@ -378,36 +370,40 @@ e T beat a beat, inclusive nos batimentos em que o modelo erra.
 
 | Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade | AUC-ROC |
 | --- | --- | --- | --- | --- | --- |
-| LUDB @ 0,50 | 0,7085 | 0,6012 | 0,3388 | 0,8636 | 0,6051 |
+| LUDB @ 0,50 | 0,6539 | 0,5393 | 0,2590 | 0,8197 | 0,5715 |
 
-A quebra por ritmo explica o número agregado:
+`tp = 94 · fn = 269 · tn = 709 · fp = 156` (1228 batimentos, 865 classe 0 /
+363 classe 1).
+
+Quebra por ritmo:
 
 | Ritmo | n | Classe | Acerto | Score médio |
 | --- | --- | --- | --- | --- |
-| sinus rhythm | 865 | 0 | 0,864 | 0,189 |
-| atrial fibrillation | 126 | 1 | 0,516 | 0,544 |
-| sinus bradycardia | 75 | 1 | 0,080 | 0,140 |
-| sinus arrhythmia | 64 | 1 | 0,047 | 0,076 |
-| sinus tachycardia | 49 | 1 | 0,265 | 0,268 |
-| atrial flutter, typical | 36 | 1 | 0,944 | 0,889 |
-| irregular sinus rhythm | 13 | 1 | 0,154 | 0,342 |
+| sinus rhythm | 865 | 0 | 0,820 | 0,185 |
+| atrial fibrillation | 126 | 1 | 0,397 | 0,422 |
+| sinus bradycardia | 75 | 1 | 0,093 | 0,101 |
+| sinus arrhythmia | 64 | 1 | 0,234 | 0,240 |
+| sinus tachycardia | 49 | 1 | 0,163 | 0,170 |
+| atrial flutter, typical | 36 | 1 | 0,250 | 0,255 |
+| irregular sinus rhythm | 13 | 1 | 0,385 | 0,394 |
 
-O modelo responde bem onde a arritmia **altera a morfologia** do batimento
-(flutter 0,94; fibrilação 0,52) e falha onde ela é uma anomalia de
-**frequência** (bradicardia, taquicardia e arritmia sinusal, 188 batimentos com
-score médio abaixo de 0,27). Isso não é acaso de treino: esses batimentos são
-morfologicamente normais, e distingui-los exige o intervalo RR — informação que
-a janela de um único batimento, por construção, não carrega. É o mesmo ponto
-que motiva a análise de sensibilidade com `--normal-rhythms sinus` no
-pré-processamento do LUDB.
+A AUC-ROC de **0,57** mostra que o modelo mal separa as classes no LUDB: acerta
+os ritmos sinusais (especificidade 0,82, pelo viés para a classe majoritária) e
+erra a maioria das arritmias — nenhum ritmo da classe 1 passa de 0,40 de
+acerto, incluindo fibrilação e flutter atrial, que alteram a morfologia do
+batimento. Duas causas se somam:
 
-Vale registrar que o teste cross-dataset é o cenário adverso por definição: as
-bases diferem em população, equipamento e — sobretudo — em critério de rótulo
-(o MIT-BIH rotula o *batimento*, o LUDB rotula o *ritmo do registro inteiro*).
+- **overfitting no treino** — sem regularização e sem seleção de época, os
+  pesos da época 20 já generalizam mal (ver seção do MIT-BIH);
+- **cenário cross-dataset adverso** — as bases diferem em população,
+  equipamento e, sobretudo, em critério de rótulo (o MIT-BIH rotula o
+  *batimento*, o LUDB rotula o *ritmo do registro inteiro*); ritmos como
+  bradicardia e taquicardia sinusais são anomalias de *frequência*, e a janela
+  de um único batimento não carrega o intervalo RR.
+
 Para o objeto do artigo isso é matéria-prima, não defeito: a Etapa 4 investiga
 se o Grad-CAM aponta estruturas eletrofisiológicas reais **mesmo quando a
-predição erra** — um falso negativo cujo mapa destaca corretamente QRS e T
-indica erro de decisão, não de foco.
+predição erra**.
 
 ## Extração do Grad-CAM (Etapa 4)
 
@@ -479,9 +475,9 @@ estrutura, já que em fibrilação/flutter atrial a onda P não existe e um IoU 
 `1.0` premiaria o Grad-CAM por "acertar" uma estrutura ausente. Para a
 `mascara_clinica` a união nunca é vazia.
 
-O limiar **não é varrido por conjunto**, pelo mesmo motivo de
-`config.DEFAULT_THRESHOLD`: isso abriria uma forma indireta de ajustar o
-resultado aos dados de teste.
+O limiar **não é varrido por conjunto**, pelo mesmo motivo do limiar de
+decisão fixo: isso abriria uma forma indireta de ajustar o resultado aos
+dados de teste.
 
 ### Referência ao acaso
 
@@ -507,6 +503,22 @@ Em `outputs/models/<run>/fidelidade_ludb/`:
 | --- | --- |
 | `ludb_fidelity.npz` | `iou_por_batimento` `(n,)`, `y_true`, `y_pred`, `ritmos`, `limiar_cam` — alinhado por índice com `ludb_gradcam.npz` e com o dataset do LUDB |
 | `ludb_fidelity.json` | proveniência (Grad-CAM, dataset), o IoU médio geral / por classe / por estrutura e a referência ao acaso |
+
+### Resultado (execução de referência)
+
+| Máscara | IoU médio | IoU mediana | Esperado ao acaso |
+| --- | --- | --- | --- |
+| clínica (P+QRS+T) | 0,077 | 0,071 | 0,577 |
+| QRS | 0,221 | 0,217 | — |
+| T | 0,027 | 0,000 | — |
+| P | 0,011 | 0,000 | — |
+
+A `mascara_clinica` cobre **58 % da janela** (a união P+QRS+T é quase o
+batimento inteiro), então o IoU contra ela é dominado pelo tamanho da máscara e
+diz pouco. O número informativo é o **IoU por estrutura**: a metade quente do
+Grad-CAM se concentra no **QRS** (IoU 0,22, contra 0,03 na T e 0,01 na P) — o
+mapa aponta o complexo QRS, não pontos arbitrários, mesmo com o modelo
+acertando pouco no LUDB. A quebra por classe prevista está em `ludb_fidelity.json`.
 
 ## Notebooks
 

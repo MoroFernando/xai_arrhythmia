@@ -1,141 +1,49 @@
 {
-  "criado_em": "2026-08-27T17:51:25+00:00",
+  "criado_em": "2026-08-30T16:14:18+00:00",
   "etapa": "3 - modelagem preditiva (treino MIT-BIH)",
   "dataset_treino": "mit-bih-arrhythmia",
   "label_encoding": {
     "0": "nao-arritmia",
     "1": "arritmia"
   },
-  "python": "3.11.3",
-  "torch": "2.6.0+cu124",
-  "model_config": {
-    "input_size": 234,
-    "channels": [
-      32,
-      64,
-      128,
-      128
-    ],
-    "kernel_size": 7,
-    "dropout": 0.3,
-    "dropout_conv": 0.1
-  },
+  "arquitetura": "CNN1D_Arritmia",
+  "python": "3.11.15",
+  "torch": "2.5.1+cu121",
+  "n_parametros": 121633,
   "train_config": {
-    "epochs": 100,
-    "batch_size": 256,
+    "epochs": 20,
+    "batch_size": 64,
     "lr": 0.001,
-    "weight_decay": 0.0001,
-    "patience": 25,
-    "criterio_selecao": "acuracia_balanceada",
-    "balancear_classes": true,
-    "split_scheme": "ds1ds2",
-    "val_fraction": 0.3,
-    "seed": 42,
-    "device": "auto",
-    "num_workers": 0
+    "split_scheme": "StratifiedGroupKFold(n_splits=5) fold 0",
+    "seed": 0
   },
   "split": {
     "treino": {
-      "n_batimentos": 51003,
-      "n_pacientes": 22,
-      "pacientes": [
-        "101",
-        "106",
-        "108",
-        "109",
-        "112",
-        "114",
-        "115",
-        "116",
-        "118",
-        "119",
-        "122",
-        "124",
-        "201",
-        "203",
-        "205",
-        "207",
-        "208",
-        "209",
-        "215",
-        "220",
-        "223",
-        "230"
-      ],
-      "classe_0": 38089,
-      "classe_1": 12914,
-      "prevalencia_classe_1": 0.2532
+      "n_batimentos": 81287,
+      "n_pacientes": 36,
+      "prevalencia_classe_1": 0.2583
     },
     "validacao": {
-      "n_batimentos": 49692,
-      "n_pacientes": 22,
-      "pacientes": [
-        "100",
-        "103",
-        "105",
-        "111",
-        "113",
-        "117",
-        "121",
-        "123",
-        "200",
-        "202",
-        "210",
-        "212",
-        "213",
-        "214",
-        "219",
-        "221",
-        "222",
-        "228",
-        "231",
-        "232",
-        "233",
-        "234"
-      ],
-      "classe_0": 36428,
-      "classe_1": 13264,
-      "prevalencia_classe_1": 0.2669
+      "n_batimentos": 19408,
+      "n_pacientes": 8,
+      "prevalencia_classe_1": 0.2672
     }
   },
   "metrics": {
     "treino": {
-      "tp": 12627,
-      "tn": 37670,
-      "fp": 419,
-      "fn": 287,
-      "n": 51003,
-      "threshold": 0.5,
-      "acuracia": 0.9861576769993922,
-      "acuracia_balanceada": 0.9833877528260646,
-      "sensibilidade": 0.9777760569924113,
-      "especificidade": 0.988999448659718,
-      "precisao": 0.967882875977311,
-      "f1": 0.972804314329738,
-      "auc_roc": 0.9978113481863978
+      "acuracia": 0.9974288631638515,
+      "loss": 0.007242418475380945
     },
     "validacao": {
-      "tp": 10907,
-      "tn": 32218,
-      "fp": 4210,
-      "fn": 2357,
-      "n": 49692,
-      "threshold": 0.5,
-      "acuracia": 0.8678459309345569,
-      "acuracia_balanceada": 0.8533652623487309,
-      "sensibilidade": 0.8223009650180941,
-      "especificidade": 0.8844295596793675,
-      "precisao": 0.7215055897334127,
-      "f1": 0.7686128043409323,
-      "auc_roc": 0.9227992747694843
+      "acuracia": 0.7610263808738664,
+      "acuracia_balanceada": 0.741912535083985,
+      "sensibilidade": 0.7008678881388621,
+      "especificidade": 0.7829571820291078,
+      "loss": 1.1995176111777164
     },
-    "threshold": 0.5,
-    "criterio_selecao": "acuracia_balanceada",
-    "melhor_epoca": 4,
-    "epocas_executadas": 29,
-    "duracao_s": 121.8
+    "epocas_executadas": 20,
+    "melhor_epoca": 20
   },
-  "n_parametros": 187425,
   "dataset_metadata": {
     "dataset": "mit-bih-arrhythmia",
     "fs_hz": 360,

@@ -212,8 +212,16 @@ def main() -> int:
     }
 
     ckpt_path = mg.save_checkpoint(out_dir / mg.CHECKPOINT_NAME, model, info)
+    # metrics.json é a versão legível: fora o val_idx (fica só no .pt, é o que
+    # os notebooks recarregam) e a lista de pacientes por partição.
+    info_legivel = {k: v for k, v in info.items() if k != "val_idx"}
+    info_legivel["split"] = {
+        nome: {k: v for k, v in bloco.items() if k != "pacientes"}
+        for nome, bloco in info["split"].items()
+    }
     (out_dir / mg.METRICS_NAME).write_text(
-        json.dumps(info, ensure_ascii=False, indent=2, default=float), encoding="utf-8"
+        json.dumps(info_legivel, ensure_ascii=False, indent=2, default=float),
+        encoding="utf-8",
     )
 
     colunas = list(history[0].keys())
