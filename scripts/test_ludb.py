@@ -6,7 +6,7 @@ LUDB. A separacao em relacao ao script de treino e metodologica, nao apenas
 organizacional — enquanto o teste vive em outro arquivo e consome um modelo ja
 salvo, nenhuma decisao de treino pode ser tomada olhando o conjunto de teste.
 
-O limiar de decisao NAO e ajustavel: e sempre ``config.DEFAULT_THRESHOLD``
+O limiar de decisao NAO e ajustavel: e sempre ``model_gradcam.DEFAULT_THRESHOLD``
 (0.5), o mesmo valor usado no treino e na validacao. Nao ha otimizacao de
 limiar neste projeto — ela abriria uma forma indireta de encaixar o modelo aos
 dados de teste.
@@ -33,10 +33,12 @@ from pathlib import Path
 
 import numpy as np
 
-# Permite executar o script sem instalar o pacote (python scripts/...).
+# Permite executar o script sem instalar o pacote e importar o módulo irmão.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from xai_arrhythmia import config, io, metrics, training  # noqa: E402
+import model_gradcam as mg  # noqa: E402
+from xai_arrhythmia import config, io, metrics  # noqa: E402
 
 PREDICTIONS_NAME = "ludb_predictions.npz"
 RESULTS_NAME = "ludb_metrics.json"
@@ -50,7 +52,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=config.MODELS_DIR / "cnn1d_mitbih" / training.CHECKPOINT_NAME,
+        default=config.MODELS_DIR / "cnn1d_mitbih" / mg.CHECKPOINT_NAME,
         help="Checkpoint .pt gerado por scripts/train_cnn.py.",
     )
     parser.add_argument(
@@ -99,9 +101,9 @@ def main() -> int:
         )
         return 1
 
-    modelo, ckpt = training.load_checkpoint(args.checkpoint, device=args.device)
+    modelo, ckpt = mg.load_checkpoint(args.checkpoint, device=args.device)
     info = ckpt.get("info", {})
-    limiar = config.DEFAULT_THRESHOLD
+    limiar = mg.DEFAULT_THRESHOLD
 
     dados = io.load_beat_dataset(args.dataset)
     series = dados["series"]
@@ -123,12 +125,11 @@ def main() -> int:
         f"classe 0: {int((labels == 0).sum())} | "
         f"classe 1: {int((labels == 1).sum())}"
     )
-    print(f"Limiar     : {limiar:.4f} (fixo, config.DEFAULT_THRESHOLD)")
+    print(f"Limiar     : {limiar:.4f} (fixo, model_gradcam.DEFAULT_THRESHOLD)")
     print("-" * 64)
 
-    m_ludb, scores = training.evaluate_arrays(
-        modelo, series, labels, threshold=limiar, device=args.device
-    )
+    scores = mg.predict_scores(modelo, series, device=args.device)
+    m_ludb = metrics.binary_metrics(labels, scores, threshold=limiar)
     print(metrics.formata_metricas("LUDB (cross-dataset)", m_ludb))
     print("-" * 64)
 

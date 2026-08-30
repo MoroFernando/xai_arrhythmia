@@ -23,28 +23,34 @@ framework-xai-arrhythmia/
 │   ├── 02_exploracao_ludb.ipynb
 │   ├── 03_analise_treino.ipynb  # Análises pós-treino (MIT-BIH)
 │   ├── 04_teste_ludb.ipynb      # Uso do modelo treinado no LUDB
-│   └── 05_gradcam_demo.ipynb    # Grad-CAM pré-extraído + anotações clínicas
+│   ├── 05_gradcam_demo.ipynb    # Grad-CAM pré-extraído + anotações clínicas
+│   └── 06_fidelidade_iou.ipynb  # IoU do Grad-CAM x máscara clínica (quantitativo)
 ├── outputs/figures/             # Figuras geradas para o artigo
 ├── outputs/models/              # Checkpoints treinados (versionados)
 ├── scripts/
+│   ├── model_gradcam.py         # CNN 1D + Grad-CAM 1D (arquitetura, treino, extração)
 │   ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
 │   ├── preprocess_ludb.py       # CLI do pré-processamento do LUDB
 │   ├── train_cnn.py             # CLI do treino/validação no MIT-BIH
 │   ├── test_ludb.py             # CLI do teste no LUDB (carrega o modelo)
-│   └── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
+│   ├── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
+│   └── fidelity_ludb.py         # CLI do IoU de fidelidade (Grad-CAM x anotação clínica)
 └── src/xai_arrhythmia/
     ├── config.py      # Constantes: janela, símbolos, caminhos, DS1/DS2
     ├── signals.py     # Derivação, reamostragem, segmentação, máscaras
     ├── io.py          # Persistência .npz + metadados
     ├── splits.py      # Divisão inter-paciente
     ├── metrics.py     # Métricas de classificação binária
-    ├── models.py      # Arquitetura CNN 1D
-    ├── training.py    # Loop de treino, checkpoint e avaliação
-    ├── gradcam.py     # Extração do Grad-CAM 1D (em lote ou 1 batimento)
+    ├── fidelity.py    # Métrica de fidelidade: IoU do Grad-CAM x máscara clínica
     └── datasets/
         ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
         └── ludb.py              # Pipeline completo do LUDB (teste)
 ```
+
+> A CNN 1D e o Grad-CAM ficam em `scripts/model_gradcam.py` (importado pelos
+> scripts e notebooks de treino, teste e explicabilidade). Os módulos
+> `src/xai_arrhythmia/models.py`, `training.py` e `gradcam.py` são de uma
+> implementação anterior e não estão em uso.
 
 ## Instalação
 
@@ -416,26 +422,17 @@ recomputada aqui (mesmo checkpoint, mesmo limiar fixo, sem aleatoriedade em
 `eval()`), então sai idêntica à de `test_ludb.py` — os dois arquivos ficam
 alinhados por índice sem precisar um do outro.
 
-A lógica do Grad-CAM mora em [`xai_arrhythmia/gradcam.py`](src/xai_arrhythmia/gradcam.py),
-não no script nem no notebook: é o mesmo padrão do resto do projeto
-(`metrics.py`, `training.py`, `signals.py`) — uma função por conceito,
-reaproveitada por CLI, script e notebook em vez de reimplementada em cada um.
+A lógica do Grad-CAM mora em [`scripts/model_gradcam.py`](scripts/model_gradcam.py)
+(`grad_cam_1d`), reaproveitada pelo script e pelos notebooks em vez de
+reimplementada em cada um.
 
 ### Grad-CAM em lote
 
-`gradcam.grad_cam_1d` extrai o mapa de ativação de `modelo.last_conv` via
-hooks de forward/backward, e aceita tanto um único batimento quanto um lote
-inteiro — o LUDB inteiro (1228 batimentos) processa em ~2 s na GPU, numa
-única passada por lote (`--batch-size`, padrão 256), sem laço em Python por
-batimento.
-
-Isso funciona porque o modelo roda sempre em modo `eval()`: BatchNorm usa
-estatísticas fixas (não as do lote) e Dropout vira identidade, então a saída
-de uma amostra do lote não depende de nenhuma outra. Somar os logits do lote e
-chamar um único `.backward()` produz, para cada amostra, exatamente o mesmo
-gradiente que um `.backward()` individual — verificado no próprio módulo
-(diferença de ~1e-7, ruído de ponto flutuante, entre as duas formas de
-calcular).
+`model_gradcam.grad_cam_1d` extrai o mapa de ativação da última camada
+convolucional (`conv2`) via hook interno, retropropaga a partir de `prob.sum()`,
+faz a média temporal do gradiente por canal, aplica `ReLU(Σ w·ativação)` e já
+reamostra o mapa (`F.interpolate` linear) para as 234 amostras da janela. O
+`extract_gradcam.py` percorre o LUDB em lotes (`--batch-size`, padrão 64).
 
 ### Formato da saída
 
@@ -443,22 +440,73 @@ Em `outputs/models/<run>/gradcam_ludb/`:
 
 | Arquivo | Conteúdo |
 | --- | --- |
-| `ludb_gradcam.npz` | `cam_raw` `(n, 29)`, `cam_interp` `(n, 234)`, `y_true`, `y_pred`, `y_score`, `pacientes`, `ritmos`, `threshold` |
-| `ludb_gradcam.json` | checkpoint, dataset, camada alvo, dimensões, método de interpolação e as métricas de referência |
+| `ludb_gradcam.npz` | `cam_interp` `(n, 234)`, `y_true`, `y_pred`, `y_score`, `pacientes`, `ritmos`, `threshold` |
+| `ludb_gradcam.json` | checkpoint, dataset, camada alvo, dimensões, método de interpolação e a acurácia de referência |
 
-`cam_raw` é o mapa no comprimento nativo da rede (`L' = 29`, a saída de
-`modelo.last_conv`); `cam_interp` já vem reamostrado para o tamanho da janela
-do batimento (234 amostras) via `gradcam.interpola_cam` — interpolação linear
-simples sobre o eixo `[0, 1]`, suficiente dado o tamanho pequeno do batimento
-(~650 ms). O arquivo é autocontido: alinhado por índice com o dataset do LUDB
-e com `ludb_predictions.npz`, mas não depende deste para ser lido.
+`cam_interp` já vem reamostrado para o tamanho da janela do batimento (234
+amostras) e normalizado em `[0, 1]` pelo máximo de cada batimento. O arquivo é
+autocontido: alinhado por índice com o dataset do LUDB e com
+`ludb_predictions.npz`, mas não depende deste para ser lido.
 
-Essa matriz `cam_interp` é a matéria-prima que falta para fechar a Etapa 4:
-cruzá-la com `ludb["mascara_clinica"]` — a máscara booleana `(n, 234)` que já
-une P, QRS e T amostra a amostra — reduz a comparação visual do notebook
-`05_gradcam_demo.ipynb` a um número por batimento (por exemplo, a fração da
-energia do mapa dentro da região clinicamente anotada), o que ainda falta
-implementar.
+Essa matriz `cam_interp` é a matéria-prima da parte 2: cruzá-la com
+`ludb["mascara_clinica"]` — a máscara booleana `(n, 234)` que já une P, QRS e T
+amostra a amostra — reduz a comparação visual do notebook `05_gradcam_demo.ipynb`
+a um número por batimento.
+
+## Fidelidade quantitativa do Grad-CAM (Etapa 4, parte 2)
+
+```bash
+python scripts/fidelity_ludb.py
+```
+
+Quarto script da cadeia, depois de `train_cnn.py`, `test_ludb.py` e
+`extract_gradcam.py`. Não roda o modelo: consome `ludb_gradcam.npz` (os mapas
+`cam_interp` já extraídos e a predição por batimento) e o dataset processado do
+LUDB (as máscaras `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`),
+ambos alinhados por índice.
+
+A lógica mora em [`xai_arrhythmia/fidelity.py`](src/xai_arrhythmia/fidelity.py),
+não no script nem no notebook — mesmo padrão de `metrics.py`.
+
+### A métrica
+
+Para cada batimento, o mapa é binarizado em `cam_interp >= --limiar-cam`
+(padrão `0.5`; o mapa já vem normalizado em `[0, 1]` por `model_gradcam.grad_cam_1d`,
+então `0.5` é a metade superior da ativação daquele batimento) e comparado com
+a máscara clínica via `IoU = interseção / união`. União vazia (nem mapa nem
+máscara marcam amostra alguma) é ignorada — isso importa nas máscaras por
+estrutura, já que em fibrilação/flutter atrial a onda P não existe e um IoU de
+`1.0` premiaria o Grad-CAM por "acertar" uma estrutura ausente. Para a
+`mascara_clinica` a união nunca é vazia.
+
+O limiar **não é varrido por conjunto**, pelo mesmo motivo de
+`config.DEFAULT_THRESHOLD`: isso abriria uma forma indireta de ajustar o
+resultado aos dados de teste.
+
+### Referência ao acaso
+
+Um mapa aleatório atinge, em média, um IoU próximo da **cobertura da máscara**
+(`dataset["metadata"]["cobertura_media_mascara_clinica"]`, a fração média da
+janela anotada). Esse é o piso: um IoU médio que apenas o iguala não indica
+foco nenhum. O script reporta `esperado ao acaso` e `acima do acaso` lado a
+lado com o IoU medido.
+
+### Quebra por classe prevista
+
+O IoU é reportado geral, por classe **prevista** (`iou_pred_0`/`iou_pred_1`) e
+por classe **verdadeira**. A separação por predição existe porque o mapa é
+normalizado pelo próprio máximo: num verdadeiro negativo, ativação fraca e
+ruidosa ainda vira um pico "quente", e o IoU ali mede outra coisa — a mesma
+ressalva do quadrante VN discutida no notebook `05`.
+
+### Formato da saída
+
+Em `outputs/models/<run>/fidelidade_ludb/`:
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `ludb_fidelity.npz` | `iou_por_batimento` `(n,)`, `y_true`, `y_pred`, `ritmos`, `limiar_cam` — alinhado por índice com `ludb_gradcam.npz` e com o dataset do LUDB |
+| `ludb_fidelity.json` | proveniência (Grad-CAM, dataset), o IoU médio geral / por classe / por estrutura e a referência ao acaso |
 
 ## Notebooks
 
@@ -469,18 +517,19 @@ implementar.
 | `03_analise_treino.ipynb` | Análise pós-treino: curvas por época, matriz de confusão, falhas por tipo de batimento e dispersão entre pacientes |
 | `04_teste_ludb.ipynb` | Uso do modelo treinado: carrega o checkpoint, avalia o LUDB, quebra por ritmo e plota batimentos com as regiões P/QRS/T sombreadas |
 | `05_gradcam_demo.ipynb` | Carrega o Grad-CAM já extraído (`ludb_gradcam.npz`) e plota, numa grade 2×2, o batimento mais confiante de cada quadrante da matriz de confusão (VP/VN/FP/FN) com o ECG colorido pela ativação e as regiões de P/QRS/T sombreadas |
+| `06_fidelidade_iou.ipynb` | Cruza `cam_interp` com `mascara_clinica`: IoU por batimento, distribuição, quebra por classe prevista e por ritmo, e o overlay do mapa binarizado contra a anotação nos batimentos de maior e menor IoU |
 
 Os notebooks 03 e 04 são a versão exploratória do que os dois scripts fazem em
 lote — o 04, em particular, demonstra o caminho de quem recebe apenas o `.pt` e
 quer rodar o modelo em dados novos. O 05 é a versão visual do que
-`extract_gradcam.py` faz em lote.
+`extract_gradcam.py` faz em lote, e o 06 do que `fidelity_ludb.py` faz.
 
 ## Próximas etapas
 
 - [x] CNN 1D binária treinada no MIT-BIH (Etapa 3)
 - [x] Extração do Grad-CAM 1D no LUDB (Etapa 4, parte 1)
-- [ ] Métrica quantitativa de fidelidade: cruzar `cam_interp` com
-      `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t` num número por
-      batimento (Etapa 4, parte 2)
+- [x] Métrica quantitativa de fidelidade: IoU entre `cam_interp` e
+      `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`, um número por
+      batimento (Etapa 4, parte 2 — `fidelity.py`, `scripts/fidelity_ludb.py`)
 - [ ] Análise de falhas da métrica por ritmo e por tipo de arritmia (Etapa 4)
 - [ ] Análise crítica e redação do artigo (Etapa 5)
