@@ -1,5 +1,5 @@
 {
-  "criado_em": "2026-08-30T16:14:18+00:00",
+  "criado_em": "2026-09-04T00:51:26+00:00",
   "etapa": "3 - modelagem preditiva (treino MIT-BIH)",
   "dataset_treino": "mit-bih-arrhythmia",
   "label_encoding": {
@@ -7,8 +7,8 @@
     "1": "arritmia"
   },
   "arquitetura": "CNN1D_Arritmia",
-  "python": "3.11.15",
-  "torch": "2.5.1+cu121",
+  "python": "3.11.0",
+  "torch": "2.6.0+cu124",
   "n_parametros": 121633,
   "train_config": {
     "epochs": 20,
@@ -31,15 +31,15 @@
   },
   "metrics": {
     "treino": {
-      "acuracia": 0.9974288631638515,
-      "loss": 0.007242418475380945
+      "acuracia": 0.9972074255415995,
+      "loss": 0.00829249113886629
     },
     "validacao": {
-      "acuracia": 0.7610263808738664,
-      "acuracia_balanceada": 0.741912535083985,
-      "sensibilidade": 0.7008678881388621,
-      "especificidade": 0.7829571820291078,
-      "loss": 1.1995176111777164
+      "acuracia": 0.7646846661170651,
+      "acuracia_balanceada": 0.7502911503777379,
+      "sensibilidade": 0.7193828351012537,
+      "especificidade": 0.781199465654222,
+      "loss": 1.121690861272694
     },
     "epocas_executadas": 20,
     "melhor_epoca": 20

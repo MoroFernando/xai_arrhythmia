@@ -2,13 +2,13 @@
 
 Exemplos:
     # Baixa a base para data/raw/mitdb e processa localmente
-    python scripts/preprocess_mitbih.py --download
+    python src/preprocess_mitbih.py --download
 
     # Processa lendo direto do PhysioNet (sem cache local)
-    python scripts/preprocess_mitbih.py --stream
+    python src/preprocess_mitbih.py --stream
 
     # Reproduz exatamente o mapeamento AAMI da classe N
-    python scripts/preprocess_mitbih.py --normal-symbols AAMI
+    python src/preprocess_mitbih.py --normal-symbols AAMI
 """
 
 from __future__ import annotations
@@ -18,11 +18,12 @@ import logging
 import sys
 from pathlib import Path
 
-# Permite executar o script sem instalar o pacote (python scripts/...).
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+# Permite executar o script de qualquer diretorio (python src/...).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from xai_arrhythmia import config, io  # noqa: E402
-from xai_arrhythmia.datasets import mitbih  # noqa: E402
+import beat_io  # noqa: E402
+import config  # noqa: E402
+from datasets import mitbih  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -128,7 +129,7 @@ def main() -> int:
     dataset = mitbih.build_dataset(cfg)
     print(mitbih.summarize(dataset))
 
-    destino = io.save_beat_dataset(
+    destino = beat_io.save_beat_dataset(
         args.output,
         series=dataset["series"],
         labels=dataset["labels"],

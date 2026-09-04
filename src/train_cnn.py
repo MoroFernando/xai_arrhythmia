@@ -1,19 +1,19 @@
 """CLI de treino da CNN 1D binária no MIT-BIH (Etapa 3).
 
-A arquitetura e o loop de treino ficam em `scripts/model_gradcam.py`. O
-pré-processamento não muda: o dataset vem de `scripts/preprocess_mitbih.py`
-via `xai_arrhythmia.io`.
+A arquitetura e o loop de treino ficam em `src/model_gradcam.py`. O
+pré-processamento não muda: o dataset vem de `src/preprocess_mitbih.py`
+via `beat_io`.
 
 Treino e teste são scripts separados: aqui só se enxerga o MIT-BIH; o teste no
-LUDB (`scripts/test_ludb.py`) apenas carrega o checkpoint gravado aqui.
+LUDB (`src/test_ludb.py`) apenas carrega o checkpoint gravado aqui.
 
 Divisão inter-paciente: `StratifiedGroupKFold` agrupa por `pacientes` (nenhum
 paciente aparece em treino e validação) e estratifica por `labels`. O fold 0 é
 usado como partição treino/validação.
 
 Exemplos:
-    python scripts/train_cnn.py
-    python scripts/train_cnn.py --epochs 30 --fold 1 --seed 7
+    python src/train_cnn.py
+    python src/train_cnn.py --epochs 30 --fold 1 --seed 7
 """
 
 from __future__ import annotations
@@ -31,12 +31,12 @@ import torch
 from sklearn.model_selection import StratifiedGroupKFold
 from torch.utils.data import DataLoader, TensorDataset
 
-# Permite executar o script sem instalar o pacote e importar o módulo irmão.
+# Permite executar o script de qualquer diretório e importar os módulos irmãos.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import beat_io  # noqa: E402
+import config  # noqa: E402
 import model_gradcam as mg  # noqa: E402
-from xai_arrhythmia import config, io  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
         "--dataset",
         type=Path,
         default=config.MITBIH_PROCESSED_FILE,
-        help="Dataset .npz gerado por scripts/preprocess_mitbih.py.",
+        help="Dataset .npz gerado por src/preprocess_mitbih.py.",
     )
     parser.add_argument(
         "--run-name",
@@ -100,7 +100,7 @@ def main() -> int:
     if not args.dataset.exists():
         print(
             f"Dataset nao encontrado: {args.dataset}\n"
-            f"Gere-o antes com: python scripts/preprocess_mitbih.py --download",
+            f"Gere-o antes com: python src/preprocess_mitbih.py --download",
             file=sys.stderr,
         )
         return 1
@@ -109,7 +109,7 @@ def main() -> int:
     np.random.seed(args.seed)
     device = mg.resolve_device(args.device)
 
-    dados = io.load_beat_dataset(args.dataset)
+    dados = beat_io.load_beat_dataset(args.dataset)
     series = np.asarray(dados["series"], dtype=np.float32)
     labels = np.asarray(dados["labels"]).astype(int)
     pacientes = np.asarray(dados["pacientes"])
@@ -134,6 +134,7 @@ def main() -> int:
     logging.info("Modelo: %d parâmetros treináveis", model.n_parametros())
 
     history: list[dict] = []
+
     for epoca in range(1, args.epochs + 1):
         tr_loss, tr_acc, _, _ = mg.run_epoch(model, train_loader, optimizer, device)
         va_loss, va_acc, va_sens, va_spec = mg.run_epoch(model, val_loader, None, device)
@@ -156,6 +157,7 @@ def main() -> int:
 
     # Métricas finais = pesos da última época (não há seleção de época).
     tr = history[-1]
+    
     metricas = {
         "treino": {
             "acuracia": tr["acc_treino"], "loss": tr["loss_treino"],
@@ -239,7 +241,7 @@ def main() -> int:
     print(f"Histórico  : {out_dir / mg.HISTORY_NAME}")
     print(
         "\nPróximo passo (teste independente):\n"
-        f"  python scripts/test_ludb.py --checkpoint {ckpt_path}"
+        f"  python src/test_ludb.py --checkpoint {ckpt_path}"
     )
     return 0
 

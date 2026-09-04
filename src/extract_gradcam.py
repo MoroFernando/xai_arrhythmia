@@ -1,16 +1,16 @@
 """CLI de extração do Grad-CAM 1D de todos os batimentos do LUDB (Etapa 4).
 
-Carrega o checkpoint gerado por `scripts/train_cnn.py` e o dataset processado
+Carrega o checkpoint gerado por `src/train_cnn.py` e o dataset processado
 do LUDB, calcula o Grad-CAM de cada batimento na última camada convolucional
-(`conv2`) — ver `scripts/model_gradcam.py` — e grava os mapas já interpolados
+(`conv2`) — ver `src/model_gradcam.py` — e grava os mapas já interpolados
 para as 234 amostras da janela, junto com a predição de cada batimento.
 
-O script é autocontido: não depende de `scripts/test_ludb.py` ter rodado. A
+O script é autocontido: não depende de `src/test_ludb.py` ter rodado. A
 predição é recomputada aqui com o mesmo checkpoint e o mesmo limiar fixo
 (`model_gradcam.DEFAULT_THRESHOLD`), então sai idêntica à de `test_ludb.py`.
 
 Exemplo:
-    python scripts/extract_gradcam.py
+    python src/extract_gradcam.py
 """
 
 from __future__ import annotations
@@ -25,12 +25,12 @@ from pathlib import Path
 import numpy as np
 import torch
 
-# Permite executar o script sem instalar o pacote e importar o módulo irmão.
+# Permite executar o script de qualquer diretório e importar os módulos irmãos.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
+import beat_io  # noqa: E402
+import config  # noqa: E402
 import model_gradcam as mg  # noqa: E402
-from xai_arrhythmia import config, io  # noqa: E402
 
 GRADCAM_NAME = "ludb_gradcam.npz"
 GRADCAM_INFO_NAME = "ludb_gradcam.json"
@@ -45,13 +45,13 @@ def parse_args() -> argparse.Namespace:
         "--checkpoint",
         type=Path,
         default=config.MODELS_DIR / "cnn1d_mitbih" / mg.CHECKPOINT_NAME,
-        help="Checkpoint .pt gerado por scripts/train_cnn.py.",
+        help="Checkpoint .pt gerado por src/train_cnn.py.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
         default=config.LUDB_PROCESSED_FILE,
-        help="Dataset .npz gerado por scripts/preprocess_ludb.py.",
+        help="Dataset .npz gerado por src/preprocess_ludb.py.",
     )
     parser.add_argument(
         "--output-dir",
@@ -78,14 +78,14 @@ def main() -> int:
     if not args.checkpoint.exists():
         print(
             f"Checkpoint nao encontrado: {args.checkpoint}\n"
-            f"Treine o modelo antes com: python scripts/train_cnn.py",
+            f"Treine o modelo antes com: python src/train_cnn.py",
             file=sys.stderr,
         )
         return 1
     if not args.dataset.exists():
         print(
             f"Dataset nao encontrado: {args.dataset}\n"
-            f"Gere-o antes com: python scripts/preprocess_ludb.py --download",
+            f"Gere-o antes com: python src/preprocess_ludb.py --download",
             file=sys.stderr,
         )
         return 1
@@ -94,7 +94,7 @@ def main() -> int:
     modelo, _ = mg.load_checkpoint(args.checkpoint, device=device)
     limiar = mg.DEFAULT_THRESHOLD
 
-    dados = io.load_beat_dataset(args.dataset)
+    dados = beat_io.load_beat_dataset(args.dataset)
     X = np.asarray(dados["series"], dtype=np.float32)
     y = np.asarray(dados["labels"]).astype(np.int64)
     pacientes = np.asarray(dados["pacientes"])
@@ -137,8 +137,8 @@ def main() -> int:
     info = {
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
-        "checkpoint": str(args.checkpoint),
-        "dataset": str(args.dataset),
+        "checkpoint": config.caminho_relativo(args.checkpoint),
+        "dataset": config.caminho_relativo(args.dataset),
         "camada_alvo": "conv2 (ultima camada convolucional)",
         "n_batimentos": int(X.shape[0]),
         "tamanho_janela": int(X.shape[1]),

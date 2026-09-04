@@ -1,8 +1,8 @@
 {
-  "criado_em": "2026-08-30T16:15:23+00:00",
+  "criado_em": "2026-09-02T20:27:41+00:00",
   "etapa": "3 - teste cross-dataset (LUDB)",
-  "checkpoint": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\outputs\\models\\cnn1d_mitbih\\model.pt",
-  "dataset_teste": "C:\\Users\\jorge\\Documentos\\Universidade - Ciência da Computação\\Matérias\\8º Semestre\\TCC\\xai_arrhythmia\\data\\processed\\ludb_beats.npz",
+  "checkpoint": "outputs/models/cnn1d_mitbih/model.pt",
+  "dataset_teste": "data/processed/ludb_beats.npz",
   "threshold": 0.5,
   "label_encoding": {
     "0": "nao-arritmia",

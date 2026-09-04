@@ -4,7 +4,7 @@ Casa única da arquitetura e do Grad-CAM usados pelos scripts e notebooks de
 CNN/Grad-CAM (`train_cnn.py`, `extract_gradcam.py`, `test_ludb.py`,
 `notebooks/03`, `04`, `05`). O pré-processamento não passa por aqui: `series`,
 `labels`, `pacientes` e as máscaras clínicas continuam vindo de
-`xai_arrhythmia.io.load_beat_dataset`.
+`beat_io.load_beat_dataset`.
 
 - `CNN1D_Arritmia`: dois blocos `Conv1d + MaxPool1d` (16 e 32 canais, kernels
   7 e 5) e duas camadas lineares terminando em **sigmoide** (probabilidade de

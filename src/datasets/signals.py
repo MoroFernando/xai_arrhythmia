@@ -13,7 +13,7 @@ from typing import Iterable, Sequence
 import numpy as np
 from scipy.signal import resample_poly
 
-from . import config
+import config
 
 
 def select_lead(

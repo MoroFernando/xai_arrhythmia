@@ -25,7 +25,9 @@ from typing import Iterable, Sequence
 import numpy as np
 import wfdb
 
-from .. import config, signals
+import config
+
+from . import signals
 
 logger = logging.getLogger(__name__)
 

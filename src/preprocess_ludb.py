@@ -2,10 +2,10 @@
 
 Exemplos:
     # Baixa a base para data/raw/ludb e processa localmente
-    python scripts/preprocess_ludb.py --download
+    python src/preprocess_ludb.py --download
 
     # Processa lendo direto do PhysioNet (sem cache local)
-    python scripts/preprocess_ludb.py --stream
+    python src/preprocess_ludb.py --stream
 """
 
 from __future__ import annotations
@@ -15,11 +15,12 @@ import logging
 import sys
 from pathlib import Path
 
-# Permite executar o script sem instalar o pacote (python scripts/...).
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+# Permite executar o script de qualquer diretorio (python src/...).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from xai_arrhythmia import config, io  # noqa: E402
-from xai_arrhythmia.datasets import ludb  # noqa: E402
+import beat_io  # noqa: E402
+import config  # noqa: E402
+from datasets import ludb  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -129,7 +130,7 @@ def main() -> int:
     dataset = ludb.build_dataset(cfg)
     print(ludb.summarize(dataset))
 
-    destino = io.save_beat_dataset(
+    destino = beat_io.save_beat_dataset(
         args.output,
         series=dataset["series"],
         labels=dataset["labels"],

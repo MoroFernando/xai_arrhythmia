@@ -11,12 +11,32 @@ from pathlib import Path
 # --------------------------------------------------------------------------
 # Caminhos
 # --------------------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = PROJECT_ROOT / "data"
 RAW_DIR = DATA_DIR / "raw"
 INTERIM_DIR = DATA_DIR / "interim"
 PROCESSED_DIR = DATA_DIR / "processed"
 OUTPUTS_DIR = PROJECT_ROOT / "outputs"
+
+
+def caminho_relativo(p: Path | str) -> str:
+    """Caminho relativo a raiz do projeto, com barras normais.
+
+    Os JSONs de saida (metricas, Grad-CAM, fidelidade) registram de onde vieram
+    o checkpoint e o dataset. Gravar o caminho absoluto da maquina que rodou o
+    script torna esses artefatos ilegiveis em qualquer outro computador — e
+    ainda versiona o nome de usuario no repositorio publico. Aqui o caminho e
+    normalizado para algo como ``outputs/models/cnn1d_mitbih/model.pt``.
+
+    Se o caminho estiver fora do repositorio (um dataset num disco externo, por
+    exemplo), devolve o absoluto: um caminho longo e melhor do que uma
+    referencia relativa que nao resolve.
+    """
+    p = Path(p).resolve()
+    try:
+        return p.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return p.as_posix()
 
 MITBIH_RAW_DIR = RAW_DIR / "mitdb"
 MITBIH_PROCESSED_FILE = PROCESSED_DIR / "mitbih_beats.npz"

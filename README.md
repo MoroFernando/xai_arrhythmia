@@ -13,7 +13,6 @@ Arrhythmia Database** e a explicabilidade é avaliada no **LUDB**, que fornece o
 ```
 framework-xai-arrhythmia/
 ├── requirements.txt              # Dependências (pip)
-├── pyproject.toml               # Pacote instalável `xai_arrhythmia`
 ├── data/
 │   ├── raw/                     # Registros WFDB baixados (não versionado)
 │   ├── interim/                 # Artefatos intermediários (não versionado)
@@ -27,32 +26,42 @@ framework-xai-arrhythmia/
 │   └── 06_fidelidade_iou.ipynb  # IoU do Grad-CAM x máscara clínica (quantitativo)
 ├── outputs/figures/             # Figuras geradas para o artigo
 ├── outputs/models/              # Checkpoints treinados (versionados)
-├── scripts/
-│   ├── model_gradcam.py         # CNN 1D + Grad-CAM 1D (arquitetura, treino, extração)
-│   ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
-│   ├── preprocess_ludb.py       # CLI do pré-processamento do LUDB
-│   ├── train_cnn.py             # CLI do treino/validação no MIT-BIH
-│   ├── test_ludb.py             # CLI do teste no LUDB (carrega o modelo)
-│   ├── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
-│   └── fidelity_ludb.py         # CLI do IoU de fidelidade (Grad-CAM x anotação clínica)
-└── src/xai_arrhythmia/
-    ├── config.py      # Constantes: janela, símbolos, caminhos
-    ├── signals.py     # Derivação, reamostragem, segmentação, máscaras
-    ├── io.py          # Persistência .npz + metadados
-    ├── splits.py      # Divisão inter-paciente
-    ├── metrics.py     # Métricas de classificação binária
-    ├── fidelity.py    # Métrica de fidelidade: IoU do Grad-CAM x máscara clínica
-    └── datasets/
-        ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
-        └── ludb.py              # Pipeline completo do LUDB (teste)
+└── src/                         # Todo o código do projeto
+    ├── config.py                # Constantes: janela, símbolos, caminhos
+    ├── beat_io.py               # Persistência .npz + metadados
+    ├── model_gradcam.py         # CNN 1D + Grad-CAM 1D (arquitetura, treino, extração)
+    ├── datasets/
+    │   ├── signals.py           # Derivação, reamostragem, segmentação, máscaras
+    │   ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
+    │   └── ludb.py              # Pipeline completo do LUDB (teste)
+    ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
+    ├── preprocess_ludb.py       # CLI do pré-processamento do LUDB
+    ├── train_cnn.py             # CLI do treino/validação no MIT-BIH
+    ├── test_ludb.py             # CLI do teste no LUDB + métricas de classificação
+    ├── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
+    └── fidelity_ludb.py         # CLI do IoU de fidelidade + métrica de fidelidade
 ```
 
-> A CNN 1D e o Grad-CAM ficam em `scripts/model_gradcam.py` (importado pelos
-> scripts e notebooks de treino, teste e explicabilidade). Os módulos
-> `src/xai_arrhythmia/models.py`, `training.py` e `gradcam.py` são de uma
-> implementação anterior e não estão em uso.
+> Todo o código vive em `src/`: não há pacote instalável. Os scripts põem o
+> próprio diretório no `sys.path`, então `python src/train_cnn.py` funciona
+> a partir de qualquer pasta, e os notebooks fazem o mesmo com uma célula de
+> bootstrap (`sys.path.insert(0, str(Path.cwd().parent / "src"))`).
+>
+> Dois módulos são compartilhados por vários scripts e por isso ficam em
+> arquivos próprios: `config.py` (caminhos e constantes) e `beat_io.py`
+> (leitura/escrita dos `.npz`). Já as métricas de classificação e a métrica de
+> fidelidade moram dentro do script que as consome — `test_ludb.py` e
+> `fidelity_ludb.py` — e os notebooks 03/04/06 as importam de lá
+> (`import test_ludb as metrics`).
 
 ## Instalação
+
+**Versão do Python: mínimo 3.9, recomendado 3.11.** O código-fonte em `src/`
+usa `from __future__ import annotations` em todos os módulos e não depende de
+sintaxe ou biblioteca padrão além do 3.9; o piso real vem das dependências
+(`numpy>=1.26`, `pandas>=2.1`, `scikit-learn>=1.4` exigem 3.9+). O projeto foi
+desenvolvido e testado no 3.11, que também é o teto prático (`torch>=2.2` e
+`numpy 1.26` não têm build para 3.13+).
 
 Crie o ambiente conda com a versão do Python:
 
@@ -70,8 +79,9 @@ Instale as dependências via pip (a partir da raiz do repositório):
 pip install -r requirements.txt
 ```
 
-O `requirements.txt` já instala o pacote local em modo editável (`-e .`), então
-`import xai_arrhythmia` funciona em qualquer script ou notebook a partir daqui.
+Não há pacote a instalar: o código fica todo em `src/`, e cada script
+resolve os próprios imports. Rode-os a partir da raiz do repositório
+(`python src/train_cnn.py`).
 
 ### Alternativa sem conda
 
@@ -84,13 +94,13 @@ python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.tx
 Baixa os registros para `data/raw/mitdb` e gera o dataset processado:
 
 ```bash
-python scripts/preprocess_mitbih.py --download
+python src/preprocess_mitbih.py --download
 ```
 
 Para ler direto do PhysioNet, sem cache local (mais lento, útil no Colab):
 
 ```bash
-python scripts/preprocess_mitbih.py --stream
+python src/preprocess_mitbih.py --stream
 ```
 
 Saída padrão: `data/processed/mitbih_beats.npz`.
@@ -139,7 +149,11 @@ O registro `108` (ausente da lista do notebook) está incluído.
 Leitura:
 
 ```python
-from xai_arrhythmia.io import load_beat_dataset
+import sys
+from pathlib import Path
+sys.path.insert(0, "src")
+
+from beat_io import load_beat_dataset
 
 dados = load_beat_dataset("data/processed/mitbih_beats.npz")
 X, y = dados["series"], dados["labels"]
@@ -154,7 +168,7 @@ classe na Etapa 4.
 ## Pré-processamento do LUDB
 
 ```bash
-python scripts/preprocess_ludb.py --download
+python src/preprocess_ludb.py --download
 ```
 
 Saída padrão: `data/processed/ludb_beats.npz`.
@@ -246,7 +260,7 @@ então ele é o piso contra o qual o resultado do modelo deve ser comparado.
 ## Treino da CNN 1D (Etapa 3)
 
 ```bash
-python scripts/train_cnn.py
+python src/train_cnn.py
 ```
 
 Saída padrão: `outputs/models/cnn1d_mitbih/` com `model.pt`, `metrics.json` e
@@ -277,7 +291,7 @@ decisão de treino.
 
 ### Arquitetura
 
-`CNN1D_Arritmia` (em `scripts/model_gradcam.py`) — **121 633 parâmetros**:
+`CNN1D_Arritmia` (em `src/model_gradcam.py`) — **121 633 parâmetros**:
 
 | Camada | Saída |
 | --- | --- |
@@ -333,9 +347,9 @@ curva completa.
 
 ```python
 import sys
-from xai_arrhythmia import config
+sys.path.insert(0, "src")
 
-sys.path.insert(0, str(config.PROJECT_ROOT / "scripts"))
+import config
 from model_gradcam import load_checkpoint
 
 modelo, ckpt = load_checkpoint("outputs/models/cnn1d_mitbih/model.pt")
@@ -348,7 +362,7 @@ print(ckpt["threshold"], ckpt["info"]["metrics"]["validacao"])
 ## Teste no LUDB (cross-dataset)
 
 ```bash
-python scripts/test_ludb.py
+python src/test_ludb.py
 ```
 
 O script **não treina nada**: carrega o checkpoint, congela os pesos e mede o
@@ -408,7 +422,7 @@ predição erra**.
 ## Extração do Grad-CAM (Etapa 4)
 
 ```bash
-python scripts/extract_gradcam.py
+python src/extract_gradcam.py
 ```
 
 Terceiro script da cadeia, depois de `train_cnn.py` e `test_ludb.py`, mas
@@ -418,7 +432,7 @@ recomputada aqui (mesmo checkpoint, mesmo limiar fixo, sem aleatoriedade em
 `eval()`), então sai idêntica à de `test_ludb.py` — os dois arquivos ficam
 alinhados por índice sem precisar um do outro.
 
-A lógica do Grad-CAM mora em [`scripts/model_gradcam.py`](scripts/model_gradcam.py)
+A lógica do Grad-CAM mora em [`src/model_gradcam.py`](src/model_gradcam.py)
 (`grad_cam_1d`), reaproveitada pelo script e pelos notebooks em vez de
 reimplementada em cada um.
 
@@ -452,7 +466,7 @@ a um número por batimento.
 ## Fidelidade quantitativa do Grad-CAM (Etapa 4, parte 2)
 
 ```bash
-python scripts/fidelity_ludb.py
+python src/fidelity_ludb.py
 ```
 
 Quarto script da cadeia, depois de `train_cnn.py`, `test_ludb.py` e
@@ -461,8 +475,9 @@ Quarto script da cadeia, depois de `train_cnn.py`, `test_ludb.py` e
 LUDB (as máscaras `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`),
 ambos alinhados por índice.
 
-A lógica mora em [`xai_arrhythmia/fidelity.py`](src/xai_arrhythmia/fidelity.py),
-não no script nem no notebook — mesmo padrão de `metrics.py`.
+A lógica mora no próprio [`src/fidelity_ludb.py`](src/fidelity_ludb.py)
+— o notebook `06` a importa de lá (`import fidelity_ludb as fidelity`), mesmo
+padrão das métricas de classificação em `src/test_ludb.py`.
 
 ### A métrica
 
@@ -542,6 +557,6 @@ quer rodar o modelo em dados novos. O 05 é a versão visual do que
 - [x] Extração do Grad-CAM 1D no LUDB (Etapa 4, parte 1)
 - [x] Métrica quantitativa de fidelidade: IoU entre `cam_interp` e
       `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`, um número por
-      batimento (Etapa 4, parte 2 — `fidelity.py`, `scripts/fidelity_ludb.py`)
+      batimento (Etapa 4, parte 2 — `fidelity.py`, `src/fidelity_ludb.py`)
 - [ ] Análise de falhas da métrica por ritmo e por tipo de arritmia (Etapa 4)
 - [ ] Análise crítica e redação do artigo (Etapa 5)
