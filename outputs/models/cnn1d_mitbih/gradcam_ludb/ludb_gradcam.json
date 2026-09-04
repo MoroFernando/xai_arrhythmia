@@ -1,5 +1,5 @@
 {
-  "criado_em": "2026-09-02T20:28:06+00:00",
+  "criado_em": "2026-09-04T21:37:23+00:00",
   "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
   "checkpoint": "outputs/models/cnn1d_mitbih/model.pt",
   "dataset": "data/processed/ludb_beats.npz",
@@ -8,6 +8,6 @@
   "tamanho_janela": 234,
   "interpolacao": "linear (F.interpolate) direto para o tamanho da janela",
   "threshold": 0.5,
-  "acuracia_referencia": 0.6539087947882736,
+  "acuracia_referencia": 0.6701954397394136,
   "observacao": "cam_interp esta alinhado por indice com o dataset do LUDB e com outputs/models/<run>/teste_ludb/ludb_predictions.npz."
 }

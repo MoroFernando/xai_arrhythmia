@@ -1,5 +1,5 @@
 {
-  "criado_em": "2026-09-02T20:28:11+00:00",
+  "criado_em": "2026-09-04T21:58:01+00:00",
   "etapa": "4 - fidelidade quantitativa do Grad-CAM (LUDB)",
   "gradcam": "outputs/models/cnn1d_mitbih/gradcam_ludb/ludb_gradcam.npz",
   "dataset": "data/processed/ludb_beats.npz",
@@ -10,45 +10,45 @@
   "geral": {
     "n": 1228,
     "n_avaliados": 1228,
-    "iou_medio": 0.07673290917967396,
-    "iou_mediana": 0.07092198581560284,
-    "iou_pred_0": 0.08015073909061589,
-    "iou_pred_1": 0.06336235856806917,
-    "iou_real_0": 0.08123649794972221,
-    "iou_real_1": 0.06600121693148736,
+    "iou_medio": 0.0769698082879805,
+    "iou_mediana": 0.07614262247560151,
+    "iou_pred_0": 0.08020362443396199,
+    "iou_pred_1": 0.06379401192460132,
+    "iou_real_0": 0.08113888043768142,
+    "iou_real_1": 0.06703524242161325,
     "cobertura_acaso": 0.5765402711656783,
-    "acima_do_acaso": -0.49980736198600434
+    "acima_do_acaso": -0.4995704628776978
   },
   "por_estrutura": {
     "P (mascara_p)": {
       "n": 1228,
-      "n_avaliados": 1176,
-      "iou_medio": 0.010897084524708403,
+      "n_avaliados": 1170,
+      "iou_medio": 0.010551829890367808,
       "iou_mediana": 0.0,
-      "iou_pred_0": 0.008559120617334487,
-      "iou_pred_1": 0.021589668271702854,
-      "iou_real_0": 0.012772730962023577,
-      "iou_real_1": 0.005770317596046929
+      "iou_pred_0": 0.006965859793567445,
+      "iou_pred_1": 0.02753245299580482,
+      "iou_real_0": 0.012011135665782647,
+      "iou_real_1": 0.006485608943338111
     },
     "QRS (mascara_qrs)": {
       "n": 1228,
       "n_avaliados": 1228,
-      "iou_medio": 0.22122251794028408,
-      "iou_mediana": 0.21748310810810811,
-      "iou_pred_0": 0.24875436030341458,
-      "iou_pred_1": 0.11351795061571755,
-      "iou_real_0": 0.24738957904917097,
-      "iou_real_1": 0.1588685017992726
+      "iou_medio": 0.24244232030842983,
+      "iou_mediana": 0.23684210526315788,
+      "iou_pred_0": 0.27479626565924664,
+      "iou_pred_1": 0.11062004710220938,
+      "iou_real_0": 0.2662244312518557,
+      "iou_real_1": 0.1857714498785033
     },
     "T (mascara_t)": {
       "n": 1228,
       "n_avaliados": 1228,
-      "iou_medio": 0.026576791746660555,
+      "iou_medio": 0.022074557411174152,
       "iou_mediana": 0.0,
-      "iou_pred_0": 0.021896700379106585,
-      "iou_pred_1": 0.044885309176531704,
-      "iou_real_0": 0.025899553925900768,
-      "iou_real_1": 0.028190595369132234
+      "iou_pred_0": 0.015780365502887684,
+      "iou_pred_1": 0.04771948807882067,
+      "iou_real_0": 0.023054511320973994,
+      "iou_real_1": 0.019739405532450013
     }
   },
   "observacao": "iou_por_batimento em ludb_fidelity.npz esta alinhado por indice com ludb_gradcam.npz e com o dataset do LUDB."

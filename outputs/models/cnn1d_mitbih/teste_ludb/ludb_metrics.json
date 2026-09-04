@@ -1,5 +1,5 @@
 {
-  "criado_em": "2026-09-02T20:27:41+00:00",
+  "criado_em": "2026-09-04T21:35:48+00:00",
   "etapa": "3 - teste cross-dataset (LUDB)",
   "checkpoint": "outputs/models/cnn1d_mitbih/model.pt",
   "dataset_teste": "data/processed/ludb_beats.npz",
@@ -9,76 +9,76 @@
     "1": "arritmia"
   },
   "metrics": {
-    "tp": 94,
-    "tn": 709,
-    "fp": 156,
-    "fn": 269,
+    "tp": 100,
+    "tn": 723,
+    "fp": 142,
+    "fn": 263,
     "n": 1228,
     "threshold": 0.5,
-    "acuracia": 0.6539087947882736,
-    "acuracia_balanceada": 0.5393031736174143,
-    "sensibilidade": 0.25895316804407714,
-    "especificidade": 0.8196531791907514,
-    "precisao": 0.376,
-    "f1": 0.3066884176182708,
-    "auc_roc": 0.5714517747097885
+    "acuracia": 0.6701954397394136,
+    "acuracia_balanceada": 0.5556601219764645,
+    "sensibilidade": 0.27548209366391185,
+    "especificidade": 0.8358381502890173,
+    "precisao": 0.4132231404958678,
+    "f1": 0.3305785123966942,
+    "auc_roc": 0.5529164477141355
   },
   "por_ritmo": [
     {
       "grupo": "sinus rhythm",
       "n": 865,
       "classe_verdadeira": 0,
-      "acertos": 709,
-      "taxa_acerto": 0.8196531791907514,
-      "score_medio": 0.18496597731498793
+      "acertos": 723,
+      "taxa_acerto": 0.8358381502890173,
+      "score_medio": 0.17688503288249735
     },
     {
       "grupo": "atrial fibrillation",
       "n": 126,
       "classe_verdadeira": 1,
-      "acertos": 50,
-      "taxa_acerto": 0.3968253968253968,
-      "score_medio": 0.4220318327626367
+      "acertos": 58,
+      "taxa_acerto": 0.4603174603174603,
+      "score_medio": 0.4530693771643296
     },
     {
       "grupo": "sinus bradycardia",
       "n": 75,
       "classe_verdadeira": 1,
-      "acertos": 7,
-      "taxa_acerto": 0.09333333333333334,
-      "score_medio": 0.101361873880055
+      "acertos": 5,
+      "taxa_acerto": 0.06666666666666667,
+      "score_medio": 0.07635064496588245
     },
     {
       "grupo": "sinus arrhythmia",
       "n": 64,
       "classe_verdadeira": 1,
-      "acertos": 15,
-      "taxa_acerto": 0.234375,
-      "score_medio": 0.2403811148827342
+      "acertos": 11,
+      "taxa_acerto": 0.171875,
+      "score_medio": 0.18896073895954352
     },
     {
       "grupo": "sinus tachycardia",
       "n": 49,
       "classe_verdadeira": 1,
-      "acertos": 8,
-      "taxa_acerto": 0.16326530612244897,
-      "score_medio": 0.16947823524717778
+      "acertos": 17,
+      "taxa_acerto": 0.3469387755102041,
+      "score_medio": 0.31921175507817195
     },
     {
       "grupo": "atrial flutter, typical",
       "n": 36,
       "classe_verdadeira": 1,
-      "acertos": 9,
-      "taxa_acerto": 0.25,
-      "score_medio": 0.25482499166340383
+      "acertos": 6,
+      "taxa_acerto": 0.16666666666666666,
+      "score_medio": 0.1726350554380161
     },
     {
       "grupo": "irregular sinus rhythm",
       "n": 13,
       "classe_verdadeira": 1,
-      "acertos": 5,
-      "taxa_acerto": 0.38461538461538464,
-      "score_medio": 0.3939865111169638
+      "acertos": 3,
+      "taxa_acerto": 0.23076923076923078,
+      "score_medio": 0.16970530217301935
     }
   ],
   "treino_info": {
@@ -151,15 +151,15 @@
     },
     "metrics_mitbih": {
       "treino": {
-        "acuracia": 0.9974288631638515,
-        "loss": 0.007242418475380945
+        "acuracia": 0.9972074255415995,
+        "loss": 0.00829249113886629
       },
       "validacao": {
-        "acuracia": 0.7610263808738664,
-        "acuracia_balanceada": 0.741912535083985,
-        "sensibilidade": 0.7008678881388621,
-        "especificidade": 0.7829571820291078,
-        "loss": 1.1995176111777164
+        "acuracia": 0.7646846661170651,
+        "acuracia_balanceada": 0.7502911503777379,
+        "sensibilidade": 0.7193828351012537,
+        "especificidade": 0.781199465654222,
+        "loss": 1.121690861272694
       },
       "epocas_executadas": 20,
       "melhor_epoca": 20
