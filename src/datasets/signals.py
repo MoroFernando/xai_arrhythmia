@@ -14,6 +14,7 @@ import numpy as np
 from scipy.signal import resample_poly
 
 import config
+import classification
 
 
 def select_lead(
@@ -199,14 +200,16 @@ def z_normalize_per_beat(X: np.ndarray, eps: float = 1e-8) -> np.ndarray:
 
 def encode_binary_labels(
     symbols: Sequence[str],
-    normal_symbols: Iterable[str] = config.NORMAL_SYMBOLS,
+    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA,
+    include_paced: bool = False,
 ) -> np.ndarray:
     """Mapeia simbolos do MIT-BIH para rotulos binarios.
 
     Returns:
         Vetor ``int64`` com 0 para nao-arritmia e 1 para arritmia.
     """
-    normal = frozenset(normal_symbols)
-    return np.asarray(
-        [0 if symbol in normal else 1 for symbol in symbols], dtype=np.int64
-    )
+    classification.metadata(only_arrhythmia, include_paced)
+    labels = [classification.mit_label(symbol, only_arrhythmia, include_paced) for symbol in symbols]
+    if any(label is None for label in labels):
+        raise classification.ClassificationError("Simbolos excluidos pela politica chegaram ao encoder.")
+    return np.asarray(labels, dtype=np.int64)

@@ -223,6 +223,7 @@ def save_checkpoint(
 def load_checkpoint(
     path: Path | str,
     device: str | torch.device = "auto",
+    expected_policy: tuple[bool, bool] | None = None,
 ) -> tuple[CNN1D_Arritmia, dict]:
     """Reconstrói a `CNN1D_Arritmia` treinada a partir do `.pt`.
 
@@ -231,6 +232,10 @@ def load_checkpoint(
     """
     dev = resolve_device(device) if isinstance(device, str) else device
     ckpt = torch.load(Path(path), map_location=dev, weights_only=False)
+    if expected_policy is not None:
+        import classification
+
+        classification.require_policy(ckpt.get("info", {}), *expected_policy, str(path))
     model = CNN1D_Arritmia(input_length=int(ckpt.get("input_length", 234)))
     model.load_state_dict(ckpt["state_dict"])
     model.to(dev).eval()

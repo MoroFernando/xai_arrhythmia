@@ -7,10 +7,10 @@ Pipeline (Etapa 2 do projeto, conjunto de teste / ground truth):
     -> segmentacao beat-to-beat centrada no pico R
     -> filtragem: so batimentos com P, QRS e T completos dentro da janela
     -> Z-normalization por batimento
-    -> propagacao do ritmo do registro para cada batimento + rotulo binario
+    -> propagacao do label clinico do registro para cada batimento
 
-O LUDB nao rotula batimento a batimento: o diagnostico de ritmo vale para o
-registro inteiro e e replicado em todos os batimentos dele.
+O LUDB nao rotula batimento a batimento. As categorias selecionadas no CSV
+definem o label do registro. O ritmo do header e preservado, mas nao rotula.
 """
 
 from __future__ import annotations
@@ -26,8 +26,10 @@ import numpy as np
 import wfdb
 
 import config
+import classification
 
 from . import signals
+from .ludb_clinical import read_clinical_csv
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,9 @@ class PreprocessConfig:
     fs_target: int = config.TARGET_FS
     window_left: int = config.WINDOW_LEFT
     window_right: int = config.WINDOW_RIGHT
-    normal_rhythms: frozenset[str] = config.LUDB_NORMAL_RHYTHMS
+    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA
+    include_paced: bool = False
+    clinical_csv: Path = config.LUDB_RAW_DIR / "ludb.csv"
     center: str = "qrs-peak"  # ou "qrs-midpoint"
     normalize: bool = True
     data_dir: Path | None = None  # None => leitura direta do PhysioNet
@@ -76,12 +80,11 @@ class PreprocessConfig:
                 "precedente e exigida apenas em registros que possuem ondas P "
                 "delimitadas (em fibrilacao/flutter atrial a onda P nao existe)"
             ),
-            "ritmos_classe_0": sorted(self.normal_rhythms),
             "rotulo_por_batimento": (
-                "ritmo do registro propagado para todos os seus batimentos"
+                "categorias clinicas do CSV decidem o label do registro, propagado aos batimentos"
             ),
             "normalization": "z-score per beat" if self.normalize else "none",
-            "label_encoding": {"0": "nao-arritmia", "1": "arritmia"},
+            **classification.metadata(self.only_arrhythmia, self.include_paced),
         }
 
 
@@ -415,6 +418,13 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         as mascaras e regioes de P/QRS/T, ``r_peaks`` e ``metadata``.
     """
     cfg = cfg or PreprocessConfig()
+    clinical, clinical_source = read_clinical_csv(cfg.clinical_csv, cfg.records)
+    decisions = {
+        record_id: classification.ludb_decision(
+            clinical[record_id]["categories"], cfg.only_arrhythmia, cfg.include_paced
+        ) for record_id in cfg.records
+    }
+    excluded_pacing = [r for r, decision in decisions.items() if decision["excluded_reason"]]
 
     segmentos: list[np.ndarray] = []
     mascaras: dict[str, list[np.ndarray]] = {"p": [], "qrs": [], "t": []}
@@ -422,6 +432,7 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     r_peaks: list[int] = []
     pacientes: list[str] = []
     ritmos: list[str] = []
+    record_labels: list[int] = []
     tem_onda_p: list[bool] = []
 
     ignorados: list[str] = []
@@ -430,6 +441,8 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     ritmos_por_registro: dict[str, str] = {}
 
     for record_id in cfg.records:
+        if record_id in excluded_pacing:
+            continue
         try:
             batimentos, ritmo, estatisticas = load_record_beats(record_id, cfg)
         except Exception as exc:  # registro ausente, sem derivacao, etc.
@@ -471,6 +484,7 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
             tem_onda_p.append(batimento["tem_onda_p"])
             pacientes.append(record_id)
             ritmos.append(ritmo)
+            record_labels.append(decisions[record_id]["label"])
 
     if not segmentos:
         raise RuntimeError("Nenhum batimento extraido — verifique os registros.")
@@ -480,24 +494,41 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         series = signals.z_normalize_per_beat(series)
 
     simbolos = np.asarray(ritmos)
-    labels = np.asarray(
-        [0 if ritmo in cfg.normal_rhythms else 1 for ritmo in ritmos], dtype=np.int64
-    )
+    labels = np.asarray(record_labels, dtype=np.int64)
 
     mascara_p = np.stack(mascaras["p"]).astype(np.int8)
     mascara_qrs = np.stack(mascaras["qrs"]).astype(np.int8)
     mascara_t = np.stack(mascaras["t"]).astype(np.int8)
     mascara_clinica = np.clip(mascara_p + mascara_qrs + mascara_t, 0, 1).astype(np.int8)
 
-    ritmos_nao_mapeados = sorted(
-        {
-            ritmo
-            for ritmo in ritmos_por_registro.values()
-            if ritmo not in cfg.normal_rhythms
-        }
-    )
-
     metadata = cfg.to_metadata()
+    metadata["clinical_source"] = clinical_source
+    metadata["records_excluidos_pacing"] = excluded_pacing
+    metadata["clinical_by_record"] = {
+        record_id: {**clinical[record_id], **decisions[record_id],
+                    "header_rhythm": ritmos_por_registro.get(record_id),
+                    "included_beats": pacientes.count(record_id)}
+        for record_id in cfg.records
+    }
+    # Contagens por categoria podem se sobrepor; combinacoes sao exclusivas.
+    critical_categories = ("extrasystolies",) if cfg.only_arrhythmia else (
+        "conduction_abnormalities", "extrasystolies", "ischemia"
+    )
+    category_records: Counter = Counter({key: 0 for key in critical_categories})
+    category_beats: Counter = Counter({key: 0 for key in critical_categories})
+    combinations: Counter = Counter()
+    combination_beats: Counter = Counter()
+    for record_id in set(pacientes):
+        reasons = decisions[record_id]["positive_reasons"]
+        category_records.update(reasons)
+        for reason in reasons:
+            category_beats[reason] += pacientes.count(record_id)
+        combinations[" + ".join(reasons) or "nenhuma"] += 1
+        combination_beats[" + ".join(reasons) or "nenhuma"] += pacientes.count(record_id)
+    metadata["positive_records_by_category"] = dict(category_records)
+    metadata["positive_beats_by_category"] = dict(category_beats)
+    metadata["category_combinations_included_records"] = dict(combinations)
+    metadata["category_combinations_included_beats"] = dict(combination_beats)
     metadata["records_processados"] = sorted(set(pacientes), key=int)
     metadata["records_ignorados"] = ignorados
     metadata["records_sem_ritmo"] = sem_ritmo
@@ -523,7 +554,6 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         "1": int((labels == 1).sum()),
     }
     metadata["ritmos_por_registro"] = ritmos_por_registro
-    metadata["ritmos_classe_1"] = ritmos_nao_mapeados
     metadata["cobertura_media_mascara_clinica"] = float(mascara_clinica.mean())
     metadata["n_batimentos_sem_onda_p"] = int(len(tem_onda_p) - sum(tem_onda_p))
 
@@ -592,7 +622,8 @@ def summarize(dataset: dict) -> str:
     for idx in np.argsort(-ritmo_counts):
         ritmo = ritmo_ids[idx]
         contagem = int(ritmo_counts[idx])
-        classe = int(labels[simbolos == ritmo][0])
+        classes = np.unique(labels[simbolos == ritmo])
+        classe = str(int(classes[0])) if len(classes) == 1 else "mista"
         linhas.append(
             f"  {ritmo:<28} -> classe {classe} : {contagem:>6} "
             f"({100 * contagem / total:.2f}%)"

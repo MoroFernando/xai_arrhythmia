@@ -19,6 +19,7 @@ import numpy as np
 import wfdb
 
 import config
+import classification
 
 from . import signals
 
@@ -34,7 +35,8 @@ class PreprocessConfig:
     window_left: int = config.WINDOW_LEFT
     window_right: int = config.WINDOW_RIGHT
     non_beat_symbols: frozenset[str] = config.NON_BEAT_SYMBOLS
-    normal_symbols: frozenset[str] = config.NORMAL_SYMBOLS
+    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA
+    include_paced: bool = False
     normalize: bool = True
     data_dir: Path | None = None  # None => leitura direta do PhysioNet
 
@@ -53,9 +55,10 @@ class PreprocessConfig:
             "window_right": self.window_right,
             "window_size": self.window_size,
             "non_beat_symbols": sorted(self.non_beat_symbols),
-            "normal_symbols": sorted(self.normal_symbols),
+            "normal_symbols": sorted(s for s in classification.MIT_KNOWN_SYMBOLS
+                                     if classification.mit_label(s, self.only_arrhythmia, self.include_paced) == 0),
             "normalization": "z-score per beat" if self.normalize else "none",
-            "label_encoding": {"0": "nao-arritmia", "1": "arritmia"},
+            **classification.metadata(self.only_arrhythmia, self.include_paced),
         }
 
 
@@ -113,7 +116,16 @@ def load_record_beats(
         ValueError: se a derivacao alvo nao existir no registro.
     """
     cfg = cfg or PreprocessConfig()
+    if record_id in classification.MIT_PACED_RECORDS and not cfg.include_paced:
+        raise classification.ClassificationError(f"Registro {record_id}: pacing fora da metodologia.")
     record, annotation = _read_record(record_id, cfg.data_dir)
+
+    # Validar antes de segment_beats converter simbolos para strings <U2.
+    unexpected = set(annotation.symbol) - config.NON_BEAT_SYMBOLS - classification.MIT_KNOWN_SYMBOLS
+    if unexpected:
+        raise classification.ClassificationError(
+            f"Registro {record_id}: simbolos desconhecidos {sorted(unexpected)!r}."
+        )
 
     signal = signals.select_lead(record.p_signal, record.sig_name, cfg.lead)
     if signal is None:
@@ -149,14 +161,31 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     all_peaks: list[np.ndarray] = []
     all_patients: list[np.ndarray] = []
     skipped: list[str] = []
+    excluded_symbols = classification.MIT_EXCLUDED_SYMBOLS | (
+        frozenset() if cfg.include_paced else classification.MIT_PACED_SYMBOLS
+    )
+    excluded_counts = {symbol: 0 for symbol in sorted(excluded_symbols)}
+    excluded_by_record: dict[str, dict[str, int]] = {}
+    paced_records = [r for r in cfg.records if r in classification.MIT_PACED_RECORDS and not cfg.include_paced]
 
     for record_id in cfg.records:
+        if record_id in paced_records:
+            continue
         try:
             segments, symbols, peaks = load_record_beats(record_id, cfg)
         except ValueError as exc:
             logger.warning("Registro %s ignorado: %s", record_id, exc)
             skipped.append(record_id)
             continue
+
+        # Exclusao de classificacao apos os filtros existentes, mantendo X e
+        # picos alinhados. As contagens se referem a janelas antes elegiveis.
+        removed = {s: int((symbols == s).sum()) for s in excluded_counts}
+        excluded_by_record[record_id] = removed
+        for symbol, count in removed.items():
+            excluded_counts[symbol] += count
+        keep = ~np.isin(symbols, list(excluded_symbols))
+        segments, symbols, peaks = segments[keep], symbols[keep], peaks[keep]
 
         if segments.shape[0] == 0:
             logger.warning("Registro %s nao gerou batimentos validos", record_id)
@@ -180,12 +209,19 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     if cfg.normalize:
         series = signals.z_normalize_per_beat(series)
 
-    labels = signals.encode_binary_labels(simbolos, cfg.normal_symbols)
+    labels = signals.encode_binary_labels(simbolos, cfg.only_arrhythmia, cfg.include_paced)
 
     metadata = cfg.to_metadata()
-    metadata["records_processados"] = [r for r in cfg.records if r not in skipped]
+    metadata["records_processados"] = [r for r in cfg.records if r not in skipped and r not in paced_records]
+    metadata["records_excluidos_pacing"] = sorted(paced_records)
+    metadata["records_pacing_fora_da_politica"] = [] if cfg.include_paced else sorted(classification.MIT_PACED_RECORDS)
+    metadata["simbolos_excluidos_apos_bordas"] = excluded_counts
+    metadata["simbolos_excluidos_por_registro"] = excluded_by_record
     metadata["records_ignorados"] = skipped
     metadata["n_batimentos"] = int(series.shape[0])
+    metadata["distribuicao_simbolos"] = {
+        str(symbol): int((simbolos == symbol).sum()) for symbol in np.unique(simbolos)
+    }
     metadata["distribuicao_labels"] = {
         "0": int((labels == 0).sum()),
         "1": int((labels == 1).sum()),

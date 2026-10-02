@@ -30,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 import model_gradcam as mg  # noqa: E402
 
 GRADCAM_NAME = "ludb_gradcam.npz"
@@ -44,13 +45,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=config.MODELS_DIR / "cnn1d_mitbih" / mg.CHECKPOINT_NAME,
+        default=None,
         help="Checkpoint .pt gerado por src/train_cnn.py.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=config.LUDB_PROCESSED_FILE,
+        default=None,
         help="Dataset .npz gerado por src/preprocess_ludb.py.",
     )
     parser.add_argument(
@@ -64,11 +65,14 @@ def parse_args() -> argparse.Namespace:
         help="Batimentos por passada de forward/backward.",
     )
     parser.add_argument("--device", default="auto", help="'auto', 'cuda' ou 'cpu'.")
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "gradcam")
 
 
 def main() -> int:
     args = parse_args()
+    out_dir = args.output_dir or (args.checkpoint.parent / "gradcam_ludb")
+    classification.require_new_output(out_dir)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -91,10 +95,19 @@ def main() -> int:
         return 1
 
     device = mg.resolve_device(args.device)
-    modelo, _ = mg.load_checkpoint(args.checkpoint, device=device)
+    modelo, ckpt = mg.load_checkpoint(
+        args.checkpoint, device=device,
+        expected_policy=(args.only_arrhythmia, args.include_paced),
+    )
     limiar = mg.DEFAULT_THRESHOLD
 
     dados = beat_io.load_beat_dataset(args.dataset)
+    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    provenance = {
+        **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
+        "dataset_sha256": classification.file_sha256(args.dataset),
+        "checkpoint_sha256": classification.file_sha256(args.checkpoint),
+    }
     X = np.asarray(dados["series"], dtype=np.float32)
     y = np.asarray(dados["labels"]).astype(np.int64)
     pacientes = np.asarray(dados["pacientes"])
@@ -125,6 +138,7 @@ def main() -> int:
 
     np.savez_compressed(
         out_dir / GRADCAM_NAME,
+        **provenance,
         cam_interp=cam_interp,
         y_true=y,
         y_pred=y_pred,
@@ -135,6 +149,8 @@ def main() -> int:
     )
 
     info = {
+        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        **provenance,
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
         "checkpoint": config.caminho_relativo(args.checkpoint),

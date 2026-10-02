@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+# Politica unica para MIT-BIH e LUDB; a CLI pode ativar o modo restrito.
+ONLY_ARRHYTHMIA = False
+
 # --------------------------------------------------------------------------
 # Caminhos
 # --------------------------------------------------------------------------
@@ -76,6 +79,7 @@ NON_BEAT_SYMBOLS = frozenset(["!", '"', "+", "[", "]", "x", "|", "~"])
 #:
 #: Por padrao usamos apenas 'N' (batimento normal), conforme a definicao do
 #: projeto. Para o agrupamento AAMI da classe N, use NORMAL_SYMBOLS_AAMI.
+# Constantes historicas abaixo: o pipeline novo usa classification.py.
 NORMAL_SYMBOLS = frozenset(["N"])
 
 #: Agrupamento AAMI EC57 da classe "N": normal, bloqueios de ramo esquerdo e
@@ -116,6 +120,7 @@ LUDB_RHYTHM_FIELD = "Rhythm"
 #: Ritmos mapeados para a classe 0 (nao-arritmia). Padrao do projeto: apenas o
 #: ritmo sinusal normal, analogo direto ao criterio adotado no MIT-BIH, onde so
 #: o simbolo 'N' recebe classe 0. Todo o restante e classe 1.
+# Constantes historicas: ritmos nao decidem os labels da nova politica.
 LUDB_NORMAL_RHYTHMS = frozenset(["sinus rhythm"])
 
 #: Alternativa mais permissiva: todos os ritmos de origem sinusal na classe 0.

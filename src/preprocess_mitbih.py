@@ -7,8 +7,8 @@ Exemplos:
     # Processa lendo direto do PhysioNet (sem cache local)
     python src/preprocess_mitbih.py --stream
 
-    # Reproduz exatamente o mapeamento AAMI da classe N
-    python src/preprocess_mitbih.py --normal-symbols AAMI
+    # Ativa a politica restrita do projeto (nao e AAMI)
+    python src/preprocess_mitbih.py --only-arrhythmia
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 from datasets import mitbih  # noqa: E402
 
 
@@ -34,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=config.MITBIH_PROCESSED_FILE,
+        default=None,
         help="Arquivo .npz de saida.",
     )
     parser.add_argument(
@@ -54,14 +55,6 @@ def parse_args() -> argparse.Namespace:
         help="Le direto do PhysioNet a cada registro, ignorando --data-dir.",
     )
     parser.add_argument(
-        "--include-paced",
-        action="store_true",
-        help=(
-            "Inclui os registros 102, 104, 107 e 217 (pacientes com marcapasso), "
-            "excluidos por padrao conforme pratica usual da literatura."
-        ),
-    )
-    parser.add_argument(
         "--lead",
         default=config.TARGET_LEAD,
         help="Derivacao a extrair (o projeto usa a derivacao II / MLII).",
@@ -79,24 +72,17 @@ def parse_args() -> argparse.Namespace:
         help="Amostras a partir do pico R.",
     )
     parser.add_argument(
-        "--normal-symbols",
-        choices=["N", "AAMI"],
-        default="N",
-        help=(
-            "Simbolos mapeados para a classe 0. 'N' usa apenas batimento normal; "
-            "'AAMI' agrupa N, L, R, e, j."
-        ),
-    )
-    parser.add_argument(
         "--no-normalize",
         action="store_true",
         help="Desativa a Z-normalization por batimento.",
     )
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "preprocess_mitbih")
 
 
 def main() -> int:
     args = parse_args()
+    classification.require_new_output(args.output)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -110,18 +96,13 @@ def main() -> int:
     if args.download:
         mitbih.download_records(records=records, dest_dir=args.data_dir)
 
-    normal_symbols = (
-        config.NORMAL_SYMBOLS_AAMI
-        if args.normal_symbols == "AAMI"
-        else config.NORMAL_SYMBOLS
-    )
-
     cfg = mitbih.PreprocessConfig(
         records=records,
         lead=args.lead,
         window_left=args.window_left,
         window_right=args.window_right,
-        normal_symbols=normal_symbols,
+        only_arrhythmia=args.only_arrhythmia,
+        include_paced=args.include_paced,
         normalize=not args.no_normalize,
         data_dir=None if args.stream else args.data_dir,
     )

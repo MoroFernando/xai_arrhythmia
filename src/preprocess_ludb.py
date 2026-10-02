@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 from datasets import ludb  # noqa: E402
 
 
@@ -31,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=config.LUDB_PROCESSED_FILE,
+        default=None,
         help="Arquivo .npz de saida.",
     )
     parser.add_argument(
@@ -83,24 +84,23 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--normal-rhythms",
-        choices=["strict", "sinus"],
-        default="strict",
-        help=(
-            "Ritmos mapeados para a classe 0. 'strict' usa apenas "
-            "'sinus rhythm'; 'sinus' agrupa todos os ritmos de origem sinusal."
-        ),
+        "--clinical-csv", type=Path, default=config.LUDB_RAW_DIR / "ludb.csv",
+        help="CSV oficial LUDB 1.0.1, obrigatorio inclusive com --stream/--download.",
     )
     parser.add_argument(
         "--no-normalize",
         action="store_true",
         help="Desativa a Z-normalization por batimento.",
     )
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "preprocess_ludb")
 
 
 def main() -> int:
     args = parse_args()
+    classification.require_new_output(args.output)
+    # Validar a fonte clinica antes de qualquer download/processamento do sinal.
+    ludb.read_clinical_csv(args.clinical_csv, config.LUDB_RECORDS)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -110,19 +110,15 @@ def main() -> int:
     if args.download:
         ludb.download_records(dest_dir=args.data_dir, lead=args.lead)
 
-    normal_rhythms = (
-        config.LUDB_SINUS_RHYTHMS
-        if args.normal_rhythms == "sinus"
-        else config.LUDB_NORMAL_RHYTHMS
-    )
-
     cfg = ludb.PreprocessConfig(
         lead=args.lead,
         fs_target=args.fs_target,
         window_left=args.window_left,
         window_right=args.window_right,
         center=args.center,
-        normal_rhythms=normal_rhythms,
+        only_arrhythmia=args.only_arrhythmia,
+        include_paced=args.include_paced,
+        clinical_csv=args.clinical_csv,
         normalize=not args.no_normalize,
         data_dir=None if args.stream else args.data_dir,
     )

@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 
 #: Nome do arquivo gravado por src/extract_gradcam.py.
 GRADCAM_NAME = "ludb_gradcam.npz"
@@ -287,13 +288,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--gradcam",
         type=Path,
-        default=config.MODELS_DIR / "cnn1d_mitbih" / "gradcam_ludb" / GRADCAM_NAME,
+        default=None,
         help="Arquivo .npz gerado por src/extract_gradcam.py.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=config.LUDB_PROCESSED_FILE,
+        default=None,
         help="Dataset .npz gerado por src/preprocess_ludb.py (traz as máscaras).",
     )
     parser.add_argument(
@@ -311,11 +312,14 @@ def parse_args() -> argparse.Namespace:
         default=DEFAULT_CAM_THRESHOLD,
         help="Limiar de binarização do mapa do Grad-CAM (já normalizado em [0, 1]).",
     )
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "fidelity")
 
 
 def main() -> int:
     args = parse_args()
+    out_dir = args.output_dir or (args.gradcam.parent.parent / "fidelidade_ludb")
+    classification.require_new_output(out_dir)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -337,13 +341,29 @@ def main() -> int:
         )
         return 1
 
-    gcam = np.load(args.gradcam, allow_pickle=True)
+    gcam = np.load(args.gradcam, allow_pickle=False)
+    classification.require_npz_policy(gcam, args.only_arrhythmia, args.include_paced, str(args.gradcam))
     cam_interp = gcam["cam_interp"]
     y_true = np.asarray(gcam["y_true"]).astype(int)
     y_pred = np.asarray(gcam["y_pred"]).astype(int)
     ritmos = np.asarray(gcam["ritmos"])
 
     dados = beat_io.load_beat_dataset(args.dataset)
+    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    dataset_sha256 = classification.file_sha256(args.dataset)
+    if "dataset_sha256" not in gcam or gcam["dataset_sha256"].item() != dataset_sha256:
+        raise classification.ClassificationError("Grad-CAM e dataset LUDB nao tem a mesma origem (SHA-256).")
+    if "checkpoint_sha256" not in gcam:
+        raise classification.ClassificationError("Grad-CAM sem identificacao do checkpoint.")
+    provenance = {
+        **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
+        "dataset_sha256": dataset_sha256,
+        "checkpoint_sha256": gcam["checkpoint_sha256"].item(),
+        "gradcam_sha256": classification.file_sha256(args.gradcam),
+    }
+    if not np.array_equal(y_true, dados["labels"]) or not np.array_equal(gcam["pacientes"], dados["pacientes"]):
+        raise classification.ClassificationError("Labels/pacientes do Grad-CAM nao estao alinhados ao dataset.")
+    gcam.close()
     mascara_clinica = dados["mascara_clinica"]
     metadata = dados.get("metadata", {})
     cobertura_acaso = metadata.get("cobertura_media_mascara_clinica")
@@ -390,6 +410,7 @@ def main() -> int:
 
     np.savez_compressed(
         out_dir / FIDELITY_NAME,
+        **provenance,
         iou_por_batimento=resultado["iou_por_batimento"].astype(np.float32),
         y_true=y_true,
         y_pred=y_pred,
@@ -398,6 +419,8 @@ def main() -> int:
     )
 
     info = {
+        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        **provenance,
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "4 - fidelidade quantitativa do Grad-CAM (LUDB)",
         "gradcam": config.caminho_relativo(args.gradcam),

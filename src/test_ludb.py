@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 import model_gradcam as mg  # noqa: E402
 
 PREDICTIONS_NAME = "ludb_predictions.npz"
@@ -192,13 +193,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint",
         type=Path,
-        default=config.MODELS_DIR / "cnn1d_mitbih" / mg.CHECKPOINT_NAME,
+        default=None,
         help="Checkpoint .pt gerado por src/train_cnn.py.",
     )
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=config.LUDB_PROCESSED_FILE,
+        default=None,
         help="Dataset .npz gerado por src/preprocess_ludb.py.",
     )
     parser.add_argument(
@@ -215,11 +216,14 @@ def parse_args() -> argparse.Namespace:
         default="auto",
         help="'auto', 'cuda' ou 'cpu'.",
     )
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "test")
 
 
 def main() -> int:
     args = parse_args()
+    out_dir = args.output_dir or (args.checkpoint.parent / "teste_ludb")
+    classification.require_new_output(out_dir)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -241,11 +245,20 @@ def main() -> int:
         )
         return 1
 
-    modelo, ckpt = mg.load_checkpoint(args.checkpoint, device=args.device)
+    modelo, ckpt = mg.load_checkpoint(
+        args.checkpoint, device=args.device,
+        expected_policy=(args.only_arrhythmia, args.include_paced),
+    )
     info = ckpt.get("info", {})
     limiar = mg.DEFAULT_THRESHOLD
 
     dados = beat_io.load_beat_dataset(args.dataset)
+    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    provenance = {
+        **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
+        "dataset_sha256": classification.file_sha256(args.dataset),
+        "checkpoint_sha256": classification.file_sha256(args.checkpoint),
+    }
     series = dados["series"]
     labels = np.asarray(dados["labels"]).astype(int)
     ritmos = np.asarray(dados["simbolos"])
@@ -283,6 +296,7 @@ def main() -> int:
     predicoes = (scores >= limiar).astype(np.int64)
     np.savez_compressed(
         out_dir / PREDICTIONS_NAME,
+        **provenance,
         y_true=labels,
         y_score=scores.astype(np.float32),
         y_pred=predicoes,
@@ -297,7 +311,9 @@ def main() -> int:
         "checkpoint": config.caminho_relativo(args.checkpoint),
         "dataset_teste": config.caminho_relativo(args.dataset),
         "threshold": limiar,
-        "label_encoding": {"0": "nao-arritmia", "1": "arritmia"},
+        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        **provenance,
+        "dataset_metadata": dados.get("metadata", {}),
         "metrics": m_ludb,
         "por_ritmo": grupos,
         "treino_info": {

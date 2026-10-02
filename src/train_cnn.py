@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import beat_io  # noqa: E402
 import config  # noqa: E402
+import classification  # noqa: E402
 import model_gradcam as mg  # noqa: E402
 
 
@@ -47,12 +48,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=config.MITBIH_PROCESSED_FILE,
+        default=None,
         help="Dataset .npz gerado por src/preprocess_mitbih.py.",
     )
     parser.add_argument(
         "--run-name",
-        default="cnn1d_mitbih",
+        default=None,
         help="Nome do diretório da execução dentro de --models-dir.",
     )
     parser.add_argument(
@@ -74,7 +75,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="auto", help="'auto', 'cuda' ou 'cpu'.")
-    return parser.parse_args()
+    classification.add_cli_argument(parser)
+    return classification.prepare_args(parser.parse_args(), "train")
 
 
 def _split_inter_paciente(series, labels, pacientes, n_splits, fold, seed):
@@ -91,6 +93,8 @@ def _split_inter_paciente(series, labels, pacientes, n_splits, fold, seed):
 
 def main() -> int:
     args = parse_args()
+    out_dir = Path(args.models_dir) / args.run_name
+    classification.require_new_output(out_dir)
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)-7s | %(message)s",
@@ -110,6 +114,8 @@ def main() -> int:
     device = mg.resolve_device(args.device)
 
     dados = beat_io.load_beat_dataset(args.dataset)
+    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    dataset_sha256 = classification.file_sha256(args.dataset)
     series = np.asarray(dados["series"], dtype=np.float32)
     labels = np.asarray(dados["labels"]).astype(int)
     pacientes = np.asarray(dados["pacientes"])
@@ -140,6 +146,7 @@ def main() -> int:
         va_loss, va_acc, va_sens, va_spec = mg.run_epoch(model, val_loader, None, device)
         history.append(
             {
+                **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
                 "epoca": epoca,
                 "loss_treino": tr_loss,
                 "acc_treino": tr_acc,
@@ -187,7 +194,9 @@ def main() -> int:
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "3 - modelagem preditiva (treino MIT-BIH)",
         "dataset_treino": "mit-bih-arrhythmia",
-        "label_encoding": {"0": "nao-arritmia", "1": "arritmia"},
+        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        "dataset_sha256": dataset_sha256,
+        "dataset_path": config.caminho_relativo(args.dataset),
         "arquitetura": "CNN1D_Arritmia",
         "python": platform.python_version(),
         "torch": torch.__version__,
@@ -203,6 +212,8 @@ def main() -> int:
             nome: {
                 "n_batimentos": int(len(idx)),
                 "n_pacientes": int(np.unique(pacientes[idx]).size),
+                "classe_0": int((labels[idx] == 0).sum()),
+                "classe_1": int((labels[idx] == 1).sum()),
                 "pacientes": sorted({str(p) for p in pacientes[idx]}),
                 "prevalencia_classe_1": round(float((labels[idx] == 1).mean()), 4),
             }
