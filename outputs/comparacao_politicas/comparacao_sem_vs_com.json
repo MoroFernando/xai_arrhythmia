@@ -1,0 +1,1214 @@
+{
+  "criado_em": "2026-10-30T02:20:07+00:00",
+  "etapa": "comparacao SEM_BLOQUEIO x COM_BLOQUEIO no LUDB",
+  "threshold": 0.5,
+  "artefatos": {
+    "SEM_BLOQUEIO": {
+      "classification_policy": "shared-extrasystoles-v1",
+      "run_dir": "outputs/models/cnn1d_mitbih_shared-extrasystoles-v1",
+      "checkpoint_usado": "outputs/models/cnn1d_mitbih_shared-extrasystoles-v1/model.pt",
+      "checkpoint_epoch": 2,
+      "sha256": {
+        "mitbih": "6c205b5018521124e0300605b196a7dd92fee5bb9021dabba9a362ef245e1a03",
+        "ludb": "ab163fa56f36b5e80c5119f1d21c8c965453a1d9f3617ae65e6837b655990b77",
+        "checkpoint": "844d63ba6b9f179440f65edc59412fb24973cc2aac7530da17d8c01265b07dd6",
+        "checkpoint_last": "a6dbb470630facbd7a9be11482216ad66029d36245c838c8b2a639d36b1d775e",
+        "metrics": "103da8677e4fdf57db386bb1b2690e21135b9e2a36d29a4aef651d6b1b5a0a36",
+        "predictions": "017ae98f916c2b331fd91d7dd8e2c42f328e5729339beb556627f80dcf5d6ff5",
+        "test_json": "1faad2cc2b08534bb2b1a4c6de3a6b0f19ff908e74cd5166d32d299b846ba882",
+        "gradcam": "eaa62828b25f2a8f35b2ff2ec0fc44bfa0a195278ad119ecb7b05fc8ad0299f3",
+        "fidelity": "204edaaa4585035312089b1bbaaa1351047266b17796151a8d8ce19736d43526",
+        "fidelity_json": "5656b568ef5b19eda447d949ca5741868ff9859f7fea5b4215404973d59d99e3"
+      }
+    },
+    "COM_BLOQUEIO": {
+      "classification_policy": "shared-extrasystoles-bbb-v1",
+      "run_dir": "outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1",
+      "checkpoint_usado": "outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt",
+      "checkpoint_epoch": 3,
+      "sha256": {
+        "mitbih": "8c64229cf9cc152710f4b593b9cd08af1a59fa3933be68d8aa6122804a7cd0ea",
+        "ludb": "d458c1a655daefce78cf1deea5f3369ab8ffe16c8695ee33556b72f8759addb6",
+        "checkpoint": "563e47dc0d34dc45d3a65da2e8cd4a9765213b38a3aa7f745f6ee5d81aca69eb",
+        "checkpoint_last": "2e487ed953397c2379d97c494d7f5cb36b483fe0c04a81614a67c2a5b8226753",
+        "metrics": "0e212164e3685c9701367f09243cf6d910830c58ae1a5fc2a223207e3009d1f3",
+        "predictions": "f5fa1ac6f2fad571aa76bc2715a0b391adb06e6a0e8d10a35f33ee4c7a245b10",
+        "test_json": "fdf01cec65b63f9c8e99d4d22b5e759d91196edbf3752d306d7fae4caab27bff",
+        "gradcam": "4e4124b8db83934bc93fc70edd51c9d574b7e2d61c9d3f2bc5f8ab8990d3f68e",
+        "fidelity": "43c44464e679862ccc29420a9ba53da7dbac556d91a6a824d0d9bed56070afcd",
+        "fidelity_json": "e82f13282be2bd16fbbb8db5e0775429185314ed24b4c2c59d2a865b2d0b3776"
+      }
+    }
+  },
+  "verificacoes": {
+    "SEM_BLOQUEIO": [
+      {
+        "verificacao": "politica dataset MIT",
+        "ok": true
+      },
+      {
+        "verificacao": "politica dataset LUDB",
+        "ok": true
+      },
+      {
+        "verificacao": "politica checkpoint",
+        "ok": true
+      },
+      {
+        "verificacao": "politica predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "politica Grad-CAM",
+        "ok": true
+      },
+      {
+        "verificacao": "politica IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "model.pt e o BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "model_last.pt e o LAST",
+        "ok": true
+      },
+      {
+        "verificacao": "epoca do model.pt = best_epoch",
+        "ok": true
+      },
+      {
+        "verificacao": "SHA model.pt registrado em metrics.json",
+        "ok": true
+      },
+      {
+        "verificacao": "checkpoint treinado no dataset MIT atual",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: checkpoint BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: papel best",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: mesmo checkpoint das predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: vinculado as predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: Grad-CAM atual",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: mesmo checkpoint",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "JSON do teste: checkpoint BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "split identico em ckpt/predicoes/Grad-CAM/IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids alinhados dataset/predicoes/Grad-CAM/IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "y_true alinhado ao dataset",
+        "ok": true
+      },
+      {
+        "verificacao": "y_pred Grad-CAM = y_pred predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "scores Grad-CAM ~ scores predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids LUDB unicos",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids MIT unicos",
+        "ok": true
+      }
+    ],
+    "COM_BLOQUEIO": [
+      {
+        "verificacao": "politica dataset MIT",
+        "ok": true
+      },
+      {
+        "verificacao": "politica dataset LUDB",
+        "ok": true
+      },
+      {
+        "verificacao": "politica checkpoint",
+        "ok": true
+      },
+      {
+        "verificacao": "politica predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "politica Grad-CAM",
+        "ok": true
+      },
+      {
+        "verificacao": "politica IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "model.pt e o BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "model_last.pt e o LAST",
+        "ok": true
+      },
+      {
+        "verificacao": "epoca do model.pt = best_epoch",
+        "ok": true
+      },
+      {
+        "verificacao": "SHA model.pt registrado em metrics.json",
+        "ok": true
+      },
+      {
+        "verificacao": "checkpoint treinado no dataset MIT atual",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: checkpoint BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "predicoes: papel best",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: mesmo checkpoint das predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: vinculado as predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "Grad-CAM: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: Grad-CAM atual",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: mesmo checkpoint",
+        "ok": true
+      },
+      {
+        "verificacao": "IoU: dataset LUDB atual",
+        "ok": true
+      },
+      {
+        "verificacao": "JSON do teste: checkpoint BEST",
+        "ok": true
+      },
+      {
+        "verificacao": "split identico em ckpt/predicoes/Grad-CAM/IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids alinhados dataset/predicoes/Grad-CAM/IoU",
+        "ok": true
+      },
+      {
+        "verificacao": "y_true alinhado ao dataset",
+        "ok": true
+      },
+      {
+        "verificacao": "y_pred Grad-CAM = y_pred predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "scores Grad-CAM ~ scores predicoes",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids LUDB unicos",
+        "ok": true
+      },
+      {
+        "verificacao": "beat_ids MIT unicos",
+        "ok": true
+      }
+    ],
+    "invariantes": [
+      {
+        "verificacao": "SEM_BLOQUEIO: registros MIT paced ausentes",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: simbolos de pacing ausentes",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: simbolos MIT so da politica",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: 201 e 202 com o mesmo subject_id",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: nenhum sujeito em treino e validacao",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: 201/202 na mesma particao",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: classes 0 e 1 no treino e na validacao",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: nenhum registro LUDB com pacing incluido",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: Rhythms nao altera nenhuma decisao LUDB",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: label 0 somente sem condicoes fora da tarefa (ex.: Ischemia)",
+        "ok": true
+      },
+      {
+        "verificacao": "SEM_BLOQUEIO: labels LUDB = decisao da politica por registro",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: registros MIT paced ausentes",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: simbolos de pacing ausentes",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: simbolos MIT so da politica",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: 201 e 202 com o mesmo subject_id",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: nenhum sujeito em treino e validacao",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: 201/202 na mesma particao",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: classes 0 e 1 no treino e na validacao",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: nenhum registro LUDB com pacing incluido",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: Rhythms nao altera nenhuma decisao LUDB",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: label 0 somente sem condicoes fora da tarefa (ex.: Ischemia)",
+        "ok": true
+      },
+      {
+        "verificacao": "COM_BLOQUEIO: labels LUDB = decisao da politica por registro",
+        "ok": true
+      },
+      {
+        "verificacao": "mesmo manifesto de split SEM e COM",
+        "ok": true
+      },
+      {
+        "verificacao": "checkpoints SEM e COM distintos",
+        "ok": true
+      },
+      {
+        "verificacao": "diretorios de saida distintos",
+        "ok": true
+      }
+    ],
+    "subconjunto_comum": [
+      {
+        "verificacao": "intersecao: y_true identico nos dois modelos",
+        "ok": true
+      },
+      {
+        "verificacao": "intersecao = populacao LUDB SEM inteira",
+        "ok": true
+      },
+      {
+        "verificacao": "is_shared_subset do COM = intersecao por beat_id",
+        "ok": true
+      },
+      {
+        "verificacao": "pacientes identicos na intersecao",
+        "ok": true
+      }
+    ]
+  },
+  "verificacoes_falhas": [],
+  "tres_avaliacoes": {
+    "SEM_BLOQUEIO": {
+      "avaliacao": "modelo SEM",
+      "n": 192,
+      "classe_0": 107,
+      "classe_1": 85,
+      "n_registros": 28,
+      "metrics": {
+        "tp": 21,
+        "tn": 107,
+        "fp": 0,
+        "fn": 64,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.6666666666666666,
+        "acuracia_balanceada": 0.6235294117647059,
+        "sensibilidade": 0.24705882352941178,
+        "especificidade": 1.0,
+        "precisao": 1.0,
+        "f1": 0.39622641509433965,
+        "auc_roc": 0.766355140186916
+      },
+      "baselines": {
+        "sempre_0": {
+          "classe_prevista": 0,
+          "tp": 0,
+          "tn": 107,
+          "fp": 0,
+          "fn": 85,
+          "n": 192,
+          "threshold": 0.5,
+          "acuracia": 0.5572916666666666,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 0.0,
+          "especificidade": 1.0,
+          "precisao": 0.0,
+          "f1": 0.0,
+          "auc_roc": 0.5
+        },
+        "sempre_1": {
+          "classe_prevista": 1,
+          "tp": 85,
+          "tn": 0,
+          "fp": 107,
+          "fn": 0,
+          "n": 192,
+          "threshold": 0.5,
+          "acuracia": 0.4427083333333333,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 1.0,
+          "especificidade": 0.0,
+          "precisao": 0.4427083333333333,
+          "f1": 0.6137184115523465,
+          "auc_roc": 0.5
+        },
+        "classe_majoritaria": {
+          "classe_prevista": 0,
+          "tp": 0,
+          "tn": 107,
+          "fp": 0,
+          "fn": 85,
+          "n": 192,
+          "threshold": 0.5,
+          "acuracia": 0.5572916666666666,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 0.0,
+          "especificidade": 1.0,
+          "precisao": 0.0,
+          "f1": 0.0,
+          "auc_roc": 0.5
+        }
+      }
+    },
+    "COM_BLOQUEIO": {
+      "avaliacao": "modelo COM (completos + incompletos)",
+      "n": 390,
+      "classe_0": 107,
+      "classe_1": 283,
+      "n_registros": 58,
+      "metrics": {
+        "tp": 48,
+        "tn": 105,
+        "fp": 2,
+        "fn": 235,
+        "n": 390,
+        "threshold": 0.5,
+        "acuracia": 0.3923076923076923,
+        "acuracia_balanceada": 0.575459859317724,
+        "sensibilidade": 0.1696113074204947,
+        "especificidade": 0.9813084112149533,
+        "precisao": 0.96,
+        "f1": 0.2882882882882883,
+        "auc_roc": 0.7143423268716358
+      },
+      "baselines": {
+        "sempre_0": {
+          "classe_prevista": 0,
+          "tp": 0,
+          "tn": 107,
+          "fp": 0,
+          "fn": 283,
+          "n": 390,
+          "threshold": 0.5,
+          "acuracia": 0.2743589743589744,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 0.0,
+          "especificidade": 1.0,
+          "precisao": 0.0,
+          "f1": 0.0,
+          "auc_roc": 0.5
+        },
+        "sempre_1": {
+          "classe_prevista": 1,
+          "tp": 283,
+          "tn": 0,
+          "fp": 107,
+          "fn": 0,
+          "n": 390,
+          "threshold": 0.5,
+          "acuracia": 0.7256410256410256,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 1.0,
+          "especificidade": 0.0,
+          "precisao": 0.7256410256410256,
+          "f1": 0.8410104011887073,
+          "auc_roc": 0.5
+        },
+        "classe_majoritaria": {
+          "classe_prevista": 1,
+          "tp": 283,
+          "tn": 0,
+          "fp": 107,
+          "fn": 0,
+          "n": 390,
+          "threshold": 0.5,
+          "acuracia": 0.7256410256410256,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 1.0,
+          "especificidade": 0.0,
+          "precisao": 0.7256410256410256,
+          "f1": 0.8410104011887073,
+          "auc_roc": 0.5
+        }
+      }
+    },
+    "COM_BLOQUEIO_somente_completos": {
+      "avaliacao": "COM_BLOQUEIO — avaliacao somente completos",
+      "n": 226,
+      "classe_0": 107,
+      "classe_1": 119,
+      "n_registros": 33,
+      "metrics": {
+        "tp": 37,
+        "tn": 105,
+        "fp": 2,
+        "fn": 82,
+        "n": 226,
+        "threshold": 0.5,
+        "acuracia": 0.6283185840707964,
+        "acuracia_balanceada": 0.6461163904814262,
+        "sensibilidade": 0.31092436974789917,
+        "especificidade": 0.9813084112149533,
+        "precisao": 0.9487179487179487,
+        "f1": 0.46835443037974683,
+        "auc_roc": 0.7958061729364644
+      },
+      "baselines": {
+        "sempre_0": {
+          "classe_prevista": 0,
+          "tp": 0,
+          "tn": 107,
+          "fp": 0,
+          "fn": 119,
+          "n": 226,
+          "threshold": 0.5,
+          "acuracia": 0.47345132743362833,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 0.0,
+          "especificidade": 1.0,
+          "precisao": 0.0,
+          "f1": 0.0,
+          "auc_roc": 0.5
+        },
+        "sempre_1": {
+          "classe_prevista": 1,
+          "tp": 119,
+          "tn": 0,
+          "fp": 107,
+          "fn": 0,
+          "n": 226,
+          "threshold": 0.5,
+          "acuracia": 0.5265486725663717,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 1.0,
+          "especificidade": 0.0,
+          "precisao": 0.5265486725663717,
+          "f1": 0.6898550724637681,
+          "auc_roc": 0.5
+        },
+        "classe_majoritaria": {
+          "classe_prevista": 1,
+          "tp": 119,
+          "tn": 0,
+          "fp": 107,
+          "fn": 0,
+          "n": 226,
+          "threshold": 0.5,
+          "acuracia": 0.5265486725663717,
+          "acuracia_balanceada": 0.5,
+          "sensibilidade": 1.0,
+          "especificidade": 0.0,
+          "precisao": 0.5265486725663717,
+          "f1": 0.6898550724637681,
+          "auc_roc": 0.5
+        }
+      },
+      "nota": "mesmo checkpoint e mesmas predicoes do modelo COM; nao e um terceiro modelo",
+      "n_excluidos": 164
+    }
+  },
+  "mesmos_beats_sem_vs_com": {
+    "definicao": "label 0 (referencia negativa) ou registro com extrassistole atrial/ventricular, inclusive quando tambem possui LBBB/RBBB; a comparacao SEM x COM usa a intersecao exata de beat_id",
+    "n_beats": 192,
+    "n_registros": 28,
+    "classe_0": 107,
+    "classe_1": 85,
+    "metrics": {
+      "SEM": {
+        "tp": 21,
+        "tn": 107,
+        "fp": 0,
+        "fn": 64,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.6666666666666666,
+        "acuracia_balanceada": 0.6235294117647059,
+        "sensibilidade": 0.24705882352941178,
+        "especificidade": 1.0,
+        "precisao": 1.0,
+        "f1": 0.39622641509433965,
+        "auc_roc": 0.766355140186916
+      },
+      "COM": {
+        "tp": 18,
+        "tn": 105,
+        "fp": 2,
+        "fn": 67,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.640625,
+        "acuracia_balanceada": 0.5965365585486531,
+        "sensibilidade": 0.21176470588235294,
+        "especificidade": 0.9813084112149533,
+        "precisao": 0.9,
+        "f1": 0.34285714285714286,
+        "auc_roc": 0.7351291918636614
+      }
+    },
+    "baselines": {
+      "sempre_0": {
+        "classe_prevista": 0,
+        "tp": 0,
+        "tn": 107,
+        "fp": 0,
+        "fn": 85,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.5572916666666666,
+        "acuracia_balanceada": 0.5,
+        "sensibilidade": 0.0,
+        "especificidade": 1.0,
+        "precisao": 0.0,
+        "f1": 0.0,
+        "auc_roc": 0.5
+      },
+      "sempre_1": {
+        "classe_prevista": 1,
+        "tp": 85,
+        "tn": 0,
+        "fp": 107,
+        "fn": 0,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.4427083333333333,
+        "acuracia_balanceada": 0.5,
+        "sensibilidade": 1.0,
+        "especificidade": 0.0,
+        "precisao": 0.4427083333333333,
+        "f1": 0.6137184115523465,
+        "auc_roc": 0.5
+      },
+      "classe_majoritaria": {
+        "classe_prevista": 0,
+        "tp": 0,
+        "tn": 107,
+        "fp": 0,
+        "fn": 85,
+        "n": 192,
+        "threshold": 0.5,
+        "acuracia": 0.5572916666666666,
+        "acuracia_balanceada": 0.5,
+        "sensibilidade": 0.0,
+        "especificidade": 1.0,
+        "precisao": 0.0,
+        "f1": 0.0,
+        "auc_roc": 0.5
+      }
+    },
+    "por_grupo": {
+      "negativos": {
+        "SEM": {
+          "n": 107,
+          "n_registros": 16,
+          "score_medio": 0.017200907900187985,
+          "score_mediano": 0.0010783523321151733,
+          "tn": 107,
+          "fp": 0,
+          "especificidade": 1.0
+        },
+        "COM": {
+          "n": 107,
+          "n_registros": 16,
+          "score_medio": 0.042654895717469034,
+          "score_mediano": 0.000729552295524627,
+          "tn": 105,
+          "fp": 2,
+          "especificidade": 0.9813084112149533
+        },
+        "transicoes_pred_SEM_para_COM": {
+          "0->0": 105,
+          "0->1": 2,
+          "1->0": 0,
+          "1->1": 0
+        },
+        "diferenca_score_COM_menos_SEM": {
+          "media": 0.02545398781728105,
+          "mediana": -0.0001004594205369358,
+          "fracao_COM_maior": 0.42990654205607476
+        }
+      },
+      "atrial_extrasystole": {
+        "SEM": {
+          "n": 36,
+          "n_registros": 7,
+          "score_medio": 0.2567537507989452,
+          "score_mediano": 0.027348979376256466,
+          "tp": 9,
+          "fn": 27,
+          "sensibilidade": 0.25,
+          "taxa_falso_negativo": 0.75
+        },
+        "COM": {
+          "n": 36,
+          "n_registros": 7,
+          "score_medio": 0.18946452690659754,
+          "score_mediano": 0.02133909333497286,
+          "tp": 6,
+          "fn": 30,
+          "sensibilidade": 0.16666666666666666,
+          "taxa_falso_negativo": 0.8333333333333334
+        },
+        "transicoes_pred_SEM_para_COM": {
+          "0->0": 27,
+          "0->1": 0,
+          "1->0": 3,
+          "1->1": 6
+        },
+        "diferenca_score_COM_menos_SEM": {
+          "media": -0.06728922389234764,
+          "mediana": -4.950994377850293e-05,
+          "fracao_COM_maior": 0.3611111111111111
+        }
+      },
+      "ventricular_extrasystole": {
+        "SEM": {
+          "n": 49,
+          "n_registros": 5,
+          "score_medio": 0.24786775800525995,
+          "score_mediano": 0.03143693506717682,
+          "tp": 12,
+          "fn": 37,
+          "sensibilidade": 0.24489795918367346,
+          "taxa_falso_negativo": 0.7551020408163265
+        },
+        "COM": {
+          "n": 49,
+          "n_registros": 5,
+          "score_medio": 0.2916946211835053,
+          "score_mediano": 0.0955388993024826,
+          "tp": 12,
+          "fn": 37,
+          "sensibilidade": 0.24489795918367346,
+          "taxa_falso_negativo": 0.7551020408163265
+        },
+        "transicoes_pred_SEM_para_COM": {
+          "0->0": 37,
+          "0->1": 0,
+          "1->0": 0,
+          "1->1": 12
+        },
+        "diferenca_score_COM_menos_SEM": {
+          "media": 0.04382686317824534,
+          "mediana": 0.004053324460983276,
+          "fracao_COM_maior": 0.6530612244897959
+        }
+      },
+      "extrassistole_com_bloqueio_no_COM": {
+        "SEM": {
+          "n": 31,
+          "n_registros": 6,
+          "score_medio": 0.4661126164625579,
+          "score_mediano": 0.4937741160392761,
+          "tp": 15,
+          "fn": 16,
+          "sensibilidade": 0.4838709677419355,
+          "taxa_falso_negativo": 0.5161290322580645
+        },
+        "COM": {
+          "n": 31,
+          "n_registros": 6,
+          "score_medio": 0.41346398903284176,
+          "score_mediano": 0.1267772763967514,
+          "tp": 12,
+          "fn": 19,
+          "sensibilidade": 0.3870967741935484,
+          "taxa_falso_negativo": 0.6129032258064516
+        },
+        "transicoes_pred_SEM_para_COM": {
+          "0->0": 16,
+          "0->1": 0,
+          "1->0": 3,
+          "1->1": 12
+        },
+        "diferenca_score_COM_menos_SEM": {
+          "media": -0.05264862742971614,
+          "mediana": 5.0067901611328125e-05,
+          "fracao_COM_maior": 0.6129032258064516
+        }
+      }
+    },
+    "transicoes_pred_SEM_para_COM": {
+      "todos": {
+        "0->0": 169,
+        "0->1": 2,
+        "1->0": 3,
+        "1->1": 18
+      },
+      "y_true_0": {
+        "0->0": 105,
+        "0->1": 2,
+        "1->0": 0,
+        "1->1": 0
+      },
+      "y_true_1": {
+        "0->0": 64,
+        "0->1": 0,
+        "1->0": 3,
+        "1->1": 18
+      }
+    },
+    "scores": {
+      "SEM": {
+        "score_medio": 0.1209851683142702,
+        "score_mediano": 0.003814372234046459
+      },
+      "COM": {
+        "score_medio": 0.13373871483540864,
+        "score_mediano": 0.0033682483481243253
+      },
+      "diferenca_COM_menos_SEM": {
+        "media": 0.012753546521138434,
+        "mediana": -1.914588688123331e-05
+      },
+      "pearson": 0.90209919945839,
+      "spearman": 0.8215622711119552
+    },
+    "iou_mesmos_beats": {
+      "clinica_PQRST": {
+        "SEM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.1141244782290111,
+          "iou_mediana": 0.09215192124247551,
+          "iou_pred_0": 0.10391089063115984,
+          "iou_pred_1": 0.19729226295437133,
+          "iou_real_0": 0.08309027155704587,
+          "iou_real_1": 0.1531910678043085,
+          "iou_correct": 0.10182653577066958,
+          "iou_incorrect": 0.13872036314569414
+        },
+        "COM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.11856766531612568,
+          "iou_mediana": 0.10989158600568771,
+          "iou_pred_0": 0.11428268818011464,
+          "iou_pred_1": 0.1554184686858207,
+          "iou_real_0": 0.10956639852200713,
+          "iou_real_1": 0.12989867175107492,
+          "iou_correct": 0.11432843177571772,
+          "iou_incorrect": 0.1261245598881573
+        },
+        "diferenca_media_pareada_COM_menos_SEM": 0.00444318708711459,
+        "por_grupo": {
+          "negativos": {
+            "SEM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.08309027155704587,
+              "iou_mediana": 0.07999999821186066
+            },
+            "COM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.10956639852200713,
+              "iou_mediana": 0.11029411852359772
+            }
+          },
+          "atrial_extrasystole": {
+            "SEM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.14589088844756284,
+              "iou_mediana": 0.10039351135492325
+            },
+            "COM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.1256472479758991,
+              "iou_mediana": 0.09382596984505653
+            }
+          },
+          "ventricular_extrasystole": {
+            "SEM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.15855446488273386,
+              "iou_mediana": 0.13333334028720856
+            },
+            "COM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.13302216676957146,
+              "iou_mediana": 0.12643678486347198
+            }
+          },
+          "extrassistole_com_bloqueio_no_COM": {
+            "SEM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.13626739839392324,
+              "iou_mediana": 0.11363636702299118
+            },
+            "COM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.15448806762334802,
+              "iou_mediana": 0.11409395933151245
+            }
+          }
+        }
+      },
+      "P": {
+        "SEM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.0027140630797172585,
+          "iou_mediana": 0.0,
+          "iou_pred_0": 0.0019250346118943732,
+          "iou_pred_1": 0.009139009174846467,
+          "iou_real_0": 0.0,
+          "iou_real_1": 0.006130589544773102,
+          "iou_correct": 0.0014993686927482486,
+          "iou_incorrect": 0.005143451853655279
+        },
+        "COM": {
+          "n": 192,
+          "n_avaliados": 189,
+          "iou_medio": 0.01133199869876816,
+          "iou_mediana": 0.0,
+          "iou_pred_0": 0.0088205048164656,
+          "iou_pred_1": 0.036742407390299964,
+          "iou_real_0": 0.0,
+          "iou_real_1": 0.026118875049599786,
+          "iou_correct": 0.005205174380292495,
+          "iou_incorrect": 0.02198734533959541
+        },
+        "diferenca_media_pareada_COM_menos_SEM": 0.008574855252706185,
+        "por_grupo": {
+          "negativos": {
+            "SEM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.0,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.0,
+              "iou_mediana": 0.0
+            }
+          },
+          "atrial_extrasystole": {
+            "SEM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.014475003091825379,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.05949299316853285,
+              "iou_mediana": 0.0
+            }
+          },
+          "ventricular_extrasystole": {
+            "SEM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.0,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 49,
+              "n_avaliados": 46,
+              "iou_medio": 0.0,
+              "iou_mediana": 0.0
+            }
+          },
+          "extrassistole_com_bloqueio_no_COM": {
+            "SEM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.0024437928392041113,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.06586283072829247,
+              "iou_mediana": 0.0
+            }
+          }
+        }
+      },
+      "QRS": {
+        "SEM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.3500645380311956,
+          "iou_mediana": 0.34450550377368927,
+          "iou_pred_0": 0.34880330252368547,
+          "iou_pred_1": 0.36033459859234945,
+          "iou_real_0": 0.3358277789900236,
+          "iou_real_1": 0.3679861052947886,
+          "iou_correct": 0.3398484290810302,
+          "iou_incorrect": 0.3704967559315264
+        },
+        "COM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.35602457450780395,
+          "iou_mediana": 0.4117647111415863,
+          "iou_pred_0": 0.3926678924323168,
+          "iou_pred_1": 0.040892040356993675,
+          "iou_real_0": 0.4357328948991321,
+          "iou_real_1": 0.25568586530930854,
+          "iou_correct": 0.38258116516640517,
+          "iou_incorrect": 0.3086845650729062
+        },
+        "diferenca_media_pareada_COM_menos_SEM": 0.005960036476608366,
+        "por_grupo": {
+          "negativos": {
+            "SEM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.3358277789900236,
+              "iou_mediana": 0.34210526943206787
+            },
+            "COM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.4357328948991321,
+              "iou_mediana": 0.46666666865348816
+            }
+          },
+          "atrial_extrasystole": {
+            "SEM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.37039170910914737,
+              "iou_mediana": 0.35147058963775635
+            },
+            "COM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.25693569063312477,
+              "iou_mediana": 0.305791512131691
+            }
+          },
+          "ventricular_extrasystole": {
+            "SEM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.3662187229005658,
+              "iou_mediana": 0.3529411852359772
+            },
+            "COM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.25476762629589256,
+              "iou_mediana": 0.23999999463558197
+            }
+          },
+          "extrassistole_com_bloqueio_no_COM": {
+            "SEM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.37658302870488936,
+              "iou_mediana": 0.3529411852359772
+            },
+            "COM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.1760483175035446,
+              "iou_mediana": 0.14705882966518402
+            }
+          }
+        }
+      },
+      "T": {
+        "SEM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.02593358302450118,
+          "iou_mediana": 0.0,
+          "iou_pred_0": 0.018120051465100713,
+          "iou_pred_1": 0.08955805429390498,
+          "iou_real_0": 0.0052837593672431515,
+          "iou_real_1": 0.05192806692246128,
+          "iou_correct": 0.01911001087864861,
+          "iou_incorrect": 0.03958072731620632
+        },
+        "COM": {
+          "n": 192,
+          "n_avaliados": 192,
+          "iou_medio": 0.03514848462267158,
+          "iou_mediana": 0.0,
+          "iou_pred_0": 0.015183140946075667,
+          "iou_pred_1": 0.20685044024139643,
+          "iou_real_0": 0.012355993075348506,
+          "iou_real_1": 0.06384020927636062,
+          "iou_correct": 0.034836153643644924,
+          "iou_incorrect": 0.03570524854180605
+        },
+        "diferenca_media_pareada_COM_menos_SEM": 0.0092149015981704,
+        "por_grupo": {
+          "negativos": {
+            "SEM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.0052837593672431515,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 107,
+              "n_avaliados": 107,
+              "iou_medio": 0.012355993075348506,
+              "iou_mediana": 0.0
+            }
+          },
+          "atrial_extrasystole": {
+            "SEM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.05279513753743635,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 36,
+              "n_avaliados": 36,
+              "iou_medio": 0.0594450319185853,
+              "iou_mediana": 0.0
+            }
+          },
+          "ventricular_extrasystole": {
+            "SEM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.0512910354502347,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 49,
+              "n_avaliados": 49,
+              "iou_medio": 0.06706931917186902,
+              "iou_mediana": 0.0
+            }
+          },
+          "extrassistole_com_bloqueio_no_COM": {
+            "SEM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.03031182337191797,
+              "iou_mediana": 0.0
+            },
+            "COM": {
+              "n": 31,
+              "n_avaliados": 31,
+              "iou_medio": 0.12274194124244875,
+              "iou_mediana": 0.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "nota_iou": "IoU mede sobreposicao entre a atencao do Grad-CAM e as regioes P/QRS/T; nao mede acerto de classificacao."
+}

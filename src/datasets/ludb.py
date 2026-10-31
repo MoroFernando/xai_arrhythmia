@@ -16,6 +16,7 @@ definem o label do registro. O ritmo do header e preservado, mas nao rotula.
 from __future__ import annotations
 
 import logging
+import json
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -52,8 +53,7 @@ class PreprocessConfig:
     fs_target: int = config.TARGET_FS
     window_left: int = config.WINDOW_LEFT
     window_right: int = config.WINDOW_RIGHT
-    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA
-    include_paced: bool = False
+    classification_policy: str = config.CLASSIFICATION_POLICY
     clinical_csv: Path = config.LUDB_RAW_DIR / "ludb.csv"
     center: str = "qrs-peak"  # ou "qrs-midpoint"
     normalize: bool = True
@@ -67,6 +67,7 @@ class PreprocessConfig:
         """Serializa os parametros para gravacao junto ao dataset."""
         return {
             "dataset": "ludb",
+            "dataset_version": config.LUDB_VERSION,
             "fs_original_hz": self.fs_original,
             "fs_hz": self.fs_target,
             "lead": self.lead,
@@ -84,7 +85,7 @@ class PreprocessConfig:
                 "categorias clinicas do CSV decidem o label do registro, propagado aos batimentos"
             ),
             "normalization": "z-score per beat" if self.normalize else "none",
-            **classification.metadata(self.only_arrhythmia, self.include_paced),
+            **classification.metadata(self.classification_policy),
         }
 
 
@@ -421,10 +422,17 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     clinical, clinical_source = read_clinical_csv(cfg.clinical_csv, cfg.records)
     decisions = {
         record_id: classification.ludb_decision(
-            clinical[record_id]["categories"], cfg.only_arrhythmia, cfg.include_paced
+            clinical[record_id]["categories"], cfg.classification_policy
         ) for record_id in cfg.records
     }
-    excluded_pacing = [r for r, decision in decisions.items() if decision["excluded_reason"]]
+    excluded_records = [
+        r for r, decision in decisions.items()
+        if decision["selection_status"] == classification.SelectionStatus.EXCLUDED.value
+    ]
+    excluded_pacing = [
+        r for r, decision in decisions.items()
+        if decision["excluded_reason"] == "cardiac_pacing"
+    ]
 
     segmentos: list[np.ndarray] = []
     mascaras: dict[str, list[np.ndarray]] = {"p": [], "qrs": [], "t": []}
@@ -434,6 +442,17 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     ritmos: list[str] = []
     record_labels: list[int] = []
     tem_onda_p: list[bool] = []
+    beat_ids: list[str] = []
+    selection_indices: list[int] = []
+    selection_status: list[str] = []
+    target_families: list[str] = []
+    target_subtypes: list[str] = []
+    bundle_side: list[str] = []
+    bundle_completeness: list[str] = []
+    positive_reasons: list[str] = []
+    other_conditions: list[str] = []
+    clinical_rhythms: list[str] = []
+    is_shared_subset: list[bool] = []
 
     ignorados: list[str] = []
     sem_ritmo: list[str] = []
@@ -441,7 +460,7 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     ritmos_por_registro: dict[str, str] = {}
 
     for record_id in cfg.records:
-        if record_id in excluded_pacing:
+        if record_id in excluded_records:
             continue
         try:
             batimentos, ritmo, estatisticas = load_record_beats(record_id, cfg)
@@ -455,10 +474,7 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         if ritmo is None:
             logger.warning("Registro %s sem campo de ritmo no header", record_id)
             sem_ritmo.append(record_id)
-            ignorados.append(record_id)
-            continue
-
-        ritmos_por_registro[record_id] = ritmo
+        ritmos_por_registro[record_id] = ritmo or ""
 
         if not batimentos:
             logger.warning("Registro %s nao gerou batimentos validos", record_id)
@@ -472,7 +488,9 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
             ritmo,
         )
 
-        for batimento in batimentos:
+        decision = decisions[record_id]
+        bundle = decision["bundle_branch"]
+        for selection_index, batimento in enumerate(batimentos):
             segmentos.append(batimento["segmento"])
             mascaras["p"].append(batimento["mascara_p"])
             mascaras["qrs"].append(batimento["mascara_qrs"])
@@ -483,8 +501,25 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
             r_peaks.append(batimento["r_peak"])
             tem_onda_p.append(batimento["tem_onda_p"])
             pacientes.append(record_id)
-            ritmos.append(ritmo)
-            record_labels.append(decisions[record_id]["label"])
+            ritmos.append(ritmo or "")
+            record_labels.append(decision["label"])
+            beat_ids.append(
+                f"ludb:{config.LUDB_VERSION}:{record_id}:{cfg.lead}:"
+                f"r{int(batimento['r_peak'])}:w{cfg.window_left}-{cfg.window_right}:"
+                f"sel{selection_index}"
+            )
+            selection_indices.append(selection_index)
+            selection_status.append(decision["selection_status"])
+            target_families.append(json.dumps(decision["target_families"], ensure_ascii=False))
+            target_subtypes.append(json.dumps(decision["target_subtypes"], ensure_ascii=False))
+            bundle_side.append(json.dumps(sorted({item["side"] for item in bundle})))
+            bundle_completeness.append(json.dumps(sorted({item["completeness"] for item in bundle})))
+            positive_reasons.append(json.dumps(decision["positive_reasons"], ensure_ascii=False))
+            other_conditions.append(json.dumps(decision["other_conditions"], ensure_ascii=False))
+            clinical_rhythms.append(json.dumps(decision["rhythms"], ensure_ascii=False))
+            is_shared_subset.append(
+                classification.is_shared_subset(decision["label"], decision["target_families"])
+            )
 
     if not segmentos:
         raise RuntimeError("Nenhum batimento extraido — verifique os registros.")
@@ -504,29 +539,29 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     metadata = cfg.to_metadata()
     metadata["clinical_source"] = clinical_source
     metadata["records_excluidos_pacing"] = excluded_pacing
+    metadata["records_excluidos_fora_tarefa"] = sorted(
+        set(excluded_records) - set(excluded_pacing), key=int
+    )
     metadata["clinical_by_record"] = {
         record_id: {**clinical[record_id], **decisions[record_id],
                     "header_rhythm": ritmos_por_registro.get(record_id),
                     "included_beats": pacientes.count(record_id)}
         for record_id in cfg.records
     }
-    # Contagens por categoria podem se sobrepor; combinacoes sao exclusivas.
-    critical_categories = ("extrasystolies",) if cfg.only_arrhythmia else (
-        "conduction_abnormalities", "extrasystolies", "ischemia"
-    )
-    category_records: Counter = Counter({key: 0 for key in critical_categories})
-    category_beats: Counter = Counter({key: 0 for key in critical_categories})
+    # Familias podem se sobrepor; combinacoes sao exclusivas por registro.
+    category_records: Counter = Counter()
+    category_beats: Counter = Counter()
     combinations: Counter = Counter()
     combination_beats: Counter = Counter()
     for record_id in set(pacientes):
-        reasons = decisions[record_id]["positive_reasons"]
-        category_records.update(reasons)
-        for reason in reasons:
-            category_beats[reason] += pacientes.count(record_id)
-        combinations[" + ".join(reasons) or "nenhuma"] += 1
-        combination_beats[" + ".join(reasons) or "nenhuma"] += pacientes.count(record_id)
-    metadata["positive_records_by_category"] = dict(category_records)
-    metadata["positive_beats_by_category"] = dict(category_beats)
+        families = decisions[record_id]["target_families"]
+        category_records.update(families)
+        for family in families:
+            category_beats[family] += pacientes.count(record_id)
+        combinations[" + ".join(families) or "negative_reference"] += 1
+        combination_beats[" + ".join(families) or "negative_reference"] += pacientes.count(record_id)
+    metadata["positive_records_by_family"] = dict(category_records)
+    metadata["positive_beats_by_family"] = dict(category_beats)
     metadata["category_combinations_included_records"] = dict(combinations)
     metadata["category_combinations_included_beats"] = dict(combination_beats)
     metadata["records_processados"] = sorted(set(pacientes), key=int)
@@ -571,6 +606,17 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         "regiao_t": np.asarray(regioes["t"], dtype=np.int64),
         "r_peaks": np.asarray(r_peaks, dtype=np.int64),
         "tem_onda_p": np.asarray(tem_onda_p, dtype=np.int8),
+        "beat_ids": np.asarray(beat_ids),
+        "selection_indices": np.asarray(selection_indices, dtype=np.int64),
+        "selection_status": np.asarray(selection_status),
+        "target_families": np.asarray(target_families),
+        "target_subtypes": np.asarray(target_subtypes),
+        "bundle_side": np.asarray(bundle_side),
+        "bundle_completeness": np.asarray(bundle_completeness),
+        "positive_reasons": np.asarray(positive_reasons),
+        "other_conditions": np.asarray(other_conditions),
+        "ritmos": np.asarray(clinical_rhythms),
+        "is_shared_subset": np.asarray(is_shared_subset, dtype=np.int8),
         "metadata": metadata,
     }
 
@@ -597,7 +643,7 @@ def summarize(dataset: dict) -> str:
         f"Candidatos (QRS)      : {candidatos}",
         f"Batimentos validos    : {total}"
         + (f" ({100 * total / candidatos:.1f}% de aproveitamento)" if candidatos else ""),
-        f"  classe 0 (normal)   : {n_normal} ({100 * n_normal / total:.2f}%)",
+        f"  classe 0 (referencia): {n_normal} ({100 * n_normal / total:.2f}%)",
         f"  classe 1 (arritmia) : {n_arritmia} ({100 * n_arritmia / total:.2f}%)",
         "-" * 68,
         "Descartes por criterio de inclusao:",

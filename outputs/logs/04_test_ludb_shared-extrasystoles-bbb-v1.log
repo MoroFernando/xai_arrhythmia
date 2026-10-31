@@ -1,0 +1,76 @@
+================================================================
+TESTE CROSS-DATASET NO LUDB
+================================================================
+Checkpoint : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt
+  papel / epoca    : best / 3
+  treinado em      : mit-bih-arrhythmia
+  split de treino  : StratifiedGroupKFold(n_splits=5) fold 0
+  parametros       : 121633
+Dataset    : /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/ludb_shared-extrasystoles-bbb-v1.npz
+  390 batimentos de 58 registros | classe 0: 107 | classe 1: 283
+Limiar     : 0.5000 (fixo, model_gradcam.DEFAULT_THRESHOLD)
+----------------------------------------------------------------
+[LUDB (cross-dataset)] n=390  limiar=0.50
+  acuracia            : 0.3923
+  acuracia balanceada : 0.5755
+  sensibilidade (rec) : 0.1696
+  especificidade      : 0.9813
+  precisao            : 0.9600
+  f1                  : 0.2883
+  auc-roc             : 0.7143
+  confusao            : tp=48 fn=235 tn=105 fp=2
+----------------------------------------------------------------
+[LUDB | subconjunto comum (tarefa SEM)] n=192  limiar=0.50
+  acuracia            : 0.6406
+  acuracia balanceada : 0.5965
+  sensibilidade (rec) : 0.2118
+  especificidade      : 0.9813
+  precisao            : 0.9000
+  f1                  : 0.3429
+  auc-roc             : 0.7351
+  confusao            : tp=18 fn=67 tn=105 fp=2
+----------------------------------------------------------------
+[LUDB por ritmo] desempenho por grupo
+  grupo                             n  classe   acerto   score
+  sinus rhythm                    255   mista   0.4549  0.1185
+  atrial fibrillation              58       1   0.3793  0.3860
+  sinus arrhythmia                 31   mista   0.2258  0.0460
+  sinus tachycardia                24       1   0.0000  0.0054
+  irregular sinus rhythm           13       1   0.2308  0.2382
+  sinus bradycardia                 9       1   0.5556  0.5425
+----------------------------------------------------------------
+[LUDB por subtipo positivo] n  regs  TP  FN  recall  score medio/mediano
+  Atrial extrasystole, type: allorhythmic patt    6   1    0    6 0.0000 0.0000/0.0000
+  Atrial extrasystole, type: bigemini             6   1    0    6 0.0000 0.0000/0.0000
+  Atrial extrasystole, type: quadrigemini         7   1    3    4 0.4286 0.4423/0.2426
+  Atrial extrasystole, type: single pac          14   4    3   11 0.2143 0.2227/0.0434
+  Atrial extrasystole: left atrial                9   2    5    4 0.5556 0.5662/0.5983
+  Atrial extrasystole: low atrial                 4   1    0    4 0.0000 0.0285/0.0004
+  Atrial extrasystole: sa-nodal extrasystole     14   3    1   13 0.0714 0.0717/0.0011
+  Atrial extrasystole: undefined                 11   2    2    9 0.1818 0.2369/0.0392
+  Complete left bundle branch block              24   4   23    1 0.9583 0.9018/0.9869
+  Complete right bundle branch block             24   3    6   18 0.2500 0.2934/0.1637
+  Incomplete left bundle branch block            24   3    0   24 0.0000 0.0395/0.0010
+  Incomplete right bundle branch block          157  26   13  144 0.0828 0.1252/0.0079
+  Ventricular extrasystole, localisation: ivs,    6   1    0    6 0.0000 0.0497/0.0330
+  Ventricular extrasystole, localisation: lvot   19   2    9   10 0.4737 0.5135/0.3561
+  Ventricular extrasystole, localisation: rvot   14   1    2   12 0.1429 0.1379/0.0009
+  Ventricular extrasystole, localisation: rvot   10   1    1    9 0.1000 0.2309/0.1211
+  Ventricular extrasystole, morphology: polymo    7   1    7    0 1.0000 0.9998/1.0000
+  Ventricular extrasystole, type: couplet         7   1    7    0 1.0000 0.9998/1.0000
+  Ventricular extrasystole, type: intercalary    20   2    2   18 0.1000 0.1114/0.0050
+  Ventricular extrasystole, type: single pvc     49   5   12   37 0.2449 0.2917/0.0955
+----------------------------------------------------------------
+[COM_BLOQUEIO — avaliacao somente completos] n=226  limiar=0.50
+  acuracia            : 0.6283
+  acuracia balanceada : 0.6461
+  sensibilidade (rec) : 0.3109
+  especificidade      : 0.9813
+  precisao            : 0.9487
+  f1                  : 0.4684
+  auc-roc             : 0.7958
+  confusao            : tp=37 fn=82 tn=105 fp=2
+================================================================
+
+Predicoes : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/teste_ludb/ludb_predictions.npz
+Metricas  : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/teste_ludb/ludb_metrics.json

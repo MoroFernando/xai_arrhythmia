@@ -11,7 +11,8 @@ CNN/Grad-CAM (`train_cnn.py`, `extract_gradcam.py`, `test_ludb.py`,
   arritmia). O hook de Grad-CAM é registrado dentro do próprio `forward`, sobre
   as ativações de `conv2` (a última camada convolucional).
 - Treino: `binary_cross_entropy` sobre a sigmoide, Adam, número fixo de épocas,
-  sem reponderação de classe e sem early stopping.
+  sem reponderação de classe e sem early stopping. O checkpoint `model.pt` é o
+  da época com maior acurácia balanceada na validação MIT-BIH.
 - Grad-CAM: retropropagação a partir de `prob.sum()`, média temporal do
   gradiente por canal, `ReLU(Σ w·ativação)`, e `F.interpolate` linear já
   levando o mapa de volta às 234 amostras da janela.
@@ -29,7 +30,8 @@ import torch.nn.functional as F
 from sklearn.metrics import accuracy_score, recall_score
 
 #: Arquivos gravados no diretório da execução.
-CHECKPOINT_NAME = "model.pt"
+CHECKPOINT_NAME = "model.pt"  # melhor época (val. acurácia balanceada), usado no LUDB
+LAST_CHECKPOINT_NAME = "model_last.pt"  # última época, apenas rastreabilidade
 HISTORY_NAME = "history.csv"
 METRICS_NAME = "metrics.json"
 
@@ -223,7 +225,7 @@ def save_checkpoint(
 def load_checkpoint(
     path: Path | str,
     device: str | torch.device = "auto",
-    expected_policy: tuple[bool, bool] | None = None,
+    expected_policy: str | None = None,
 ) -> tuple[CNN1D_Arritmia, dict]:
     """Reconstrói a `CNN1D_Arritmia` treinada a partir do `.pt`.
 
@@ -235,7 +237,7 @@ def load_checkpoint(
     if expected_policy is not None:
         import classification
 
-        classification.require_policy(ckpt.get("info", {}), *expected_policy, str(path))
+        classification.require_policy(ckpt.get("info", {}), expected_policy, str(path))
     model = CNN1D_Arritmia(input_length=int(ckpt.get("input_length", 234)))
     model.load_state_dict(ckpt["state_dict"])
     model.to(dev).eval()

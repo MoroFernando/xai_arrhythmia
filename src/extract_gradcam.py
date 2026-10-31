@@ -16,7 +16,6 @@ Exemplo:
 from __future__ import annotations
 
 import argparse
-import json
 import logging
 import sys
 from datetime import datetime, timezone
@@ -61,6 +60,13 @@ def parse_args() -> argparse.Namespace:
         help="Diretório de saída (padrão: subpasta 'gradcam_ludb' ao lado do checkpoint).",
     )
     parser.add_argument(
+        "--predictions",
+        type=Path,
+        default=None,
+        help=("ludb_predictions.npz do teste (padrão: teste_ludb/ ao lado do checkpoint); "
+              "o Grad-CAM exige o mesmo checkpoint e as mesmas predições."),
+    )
+    parser.add_argument(
         "--batch-size", type=int, default=64,
         help="Batimentos por passada de forward/backward.",
     )
@@ -97,17 +103,59 @@ def main() -> int:
     device = mg.resolve_device(args.device)
     modelo, ckpt = mg.load_checkpoint(
         args.checkpoint, device=device,
-        expected_policy=(args.only_arrhythmia, args.include_paced),
+        expected_policy=args.classification_policy,
     )
+    ckpt_info = ckpt.get("info", {})
+    if "split_manifest_sha256" not in ckpt_info:
+        raise classification.ClassificationError(
+            "Checkpoint sem identidade do split; checkpoint historico incompativel."
+        )
+    if ckpt_info.get("checkpoint_role") != "best":
+        raise classification.ClassificationError(
+            f"{args.checkpoint}: checkpoint_role={ckpt_info.get('checkpoint_role')!r}; "
+            "o Grad-CAM exige o melhor checkpoint por acuracia balanceada de validacao."
+        )
     limiar = mg.DEFAULT_THRESHOLD
 
     dados = beat_io.load_beat_dataset(args.dataset)
-    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    classification.require_policy(dados.get("metadata", {}), args.classification_policy, str(args.dataset))
+    trace_keys = (
+        "beat_ids", "selection_indices", "target_families", "target_subtypes",
+        "bundle_side", "bundle_completeness", "positive_reasons", "other_conditions",
+        "is_shared_subset",
+    )
+    missing_trace = set(trace_keys) - dados.keys()
+    if missing_trace:
+        raise classification.ClassificationError(
+            f"Dataset LUDB sem rastreabilidade nova: {sorted(missing_trace)}."
+        )
     provenance = {
-        **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
+        **classification.artifact_identity(args.classification_policy),
         "dataset_sha256": classification.file_sha256(args.dataset),
         "checkpoint_sha256": classification.file_sha256(args.checkpoint),
+        "checkpoint_role": ckpt_info["checkpoint_role"],
+        "checkpoint_epoch": int(ckpt_info["checkpoint_epoch"]),
+        "split_manifest_sha256": ckpt_info["split_manifest_sha256"],
     }
+    predictions_path = args.predictions or (
+        args.checkpoint.parent / "teste_ludb" / "ludb_predictions.npz"
+    )
+    if not predictions_path.exists():
+        raise classification.ClassificationError(
+            f"Predicoes LUDB ausentes: {predictions_path}. Rode src/test_ludb.py antes."
+        )
+    with np.load(predictions_path, allow_pickle=False) as pred:
+        classification.require_npz_policy(pred, args.classification_policy, str(predictions_path))
+        for key in ("checkpoint_sha256", "dataset_sha256"):
+            if key not in pred or pred[key].item() != provenance[key]:
+                raise classification.ClassificationError(
+                    f"Predicoes {predictions_path} com {key} diferente do Grad-CAM."
+                )
+        if not np.array_equal(pred["beat_ids"], dados["beat_ids"]):
+            raise classification.ClassificationError("Predicoes e dataset com beat_ids diferentes.")
+        pred_scores = np.asarray(pred["y_score"], dtype=np.float32)
+        pred_y_pred = np.asarray(pred["y_pred"]).astype(np.int64)
+    provenance["predictions_sha256"] = classification.file_sha256(predictions_path)
     X = np.asarray(dados["series"], dtype=np.float32)
     y = np.asarray(dados["labels"]).astype(np.int64)
     pacientes = np.asarray(dados["pacientes"])
@@ -132,6 +180,13 @@ def main() -> int:
 
     acerto = float((y_pred == y).mean())
     print(f"  predicao de referencia: acuracia {acerto:.4f}")
+    # Mesmo checkpoint => mesmos scores (tolerancia so para arredondamento de GPU).
+    max_diff = float(np.abs(scores - pred_scores).max())
+    if max_diff > 1e-4 or not np.array_equal(y_pred, pred_y_pred):
+        raise classification.ClassificationError(
+            f"Scores/predicoes do Grad-CAM divergem do teste LUDB (max |diff|={max_diff:.2e})."
+        )
+    print(f"  conferencia com {predictions_path.name}: max |diff score| = {max_diff:.2e}, y_pred identico")
 
     out_dir = args.output_dir or (args.checkpoint.parent / "gradcam_ludb")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -145,11 +200,12 @@ def main() -> int:
         y_score=scores,
         pacientes=pacientes,
         ritmos=ritmos,
+        **{key: dados[key] for key in trace_keys},
         threshold=np.array(limiar),
     )
 
     info = {
-        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        **classification.metadata(args.classification_policy),
         **provenance,
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
@@ -161,13 +217,15 @@ def main() -> int:
         "interpolacao": "linear (F.interpolate) direto para o tamanho da janela",
         "threshold": limiar,
         "acuracia_referencia": acerto,
+        "predictions": config.caminho_relativo(predictions_path),
+        "max_abs_diff_score_vs_predictions": max_diff,
         "observacao": (
             "cam_interp esta alinhado por indice com o dataset do LUDB e com "
             "outputs/models/<run>/teste_ludb/ludb_predictions.npz."
         ),
     }
     (out_dir / GRADCAM_INFO_NAME).write_text(
-        json.dumps(info, ensure_ascii=False, indent=2), encoding="utf-8"
+        classification.dumps_json(info), encoding="utf-8"
     )
 
     print(f"\nGrad-CAM  : {out_dir / GRADCAM_NAME}")

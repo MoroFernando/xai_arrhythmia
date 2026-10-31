@@ -1,0 +1,97 @@
+23:17:38 | INFO    | Registro 4: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 7: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 10: 4/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | WARNING | Registro 13 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 19: 5/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 22: 9/11 batimentos validos | ritmo: sinus arrhythmia
+23:17:38 | WARNING | Registro 23 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 24: 5/7 batimentos validos | ritmo: sinus bradycardia
+23:17:38 | INFO    | Registro 25: 5/7 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 31: 2/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 32: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 36: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 38: 14/15 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | INFO    | Registro 41: 4/6 batimentos validos | ritmo: sinus bradycardia
+23:17:38 | INFO    | Registro 43: 3/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 44: 8/9 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | INFO    | Registro 48: 5/7 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 51: 4/8 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | WARNING | Registro 54 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 60: 2/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 66: 4/6 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 70: 11/13 batimentos validos | ritmo: sinus tachycardia
+23:17:38 | INFO    | Registro 77: 2/10 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 78: 2/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 81: 9/11 batimentos validos | ritmo: sinus rhythm
+23:17:38 | WARNING | Registro 82 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 83: 7/10 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | INFO    | Registro 85: 8/10 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 97: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 99: 10/12 batimentos validos | ritmo: sinus arrhythmia
+23:17:38 | INFO    | Registro 102: 6/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 105: 6/11 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 106: 10/12 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 107: 1/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 108: 7/11 batimentos validos | ritmo: irregular sinus rhythm
+23:17:38 | INFO    | Registro 110: 12/13 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | INFO    | Registro 112: 13/14 batimentos validos | ritmo: atrial fibrillation
+23:17:38 | INFO    | Registro 116: 13/13 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 117: 13/13 batimentos validos | ritmo: sinus tachycardia
+23:17:38 | INFO    | Registro 119: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | WARNING | Registro 120 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 122: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 123: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | WARNING | Registro 125 nao gerou batimentos validos
+23:17:38 | INFO    | Registro 126: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 132: 6/8 batimentos validos | ritmo: irregular sinus rhythm
+23:17:38 | INFO    | Registro 135: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 141: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 142: 8/10 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 149: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 152: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 156: 5/7 batimentos validos | ritmo: sinus arrhythmia
+23:17:38 | INFO    | Registro 157: 5/7 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 161: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 162: 8/10 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 166: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 176: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 184: 7/9 batimentos validos | ritmo: sinus arrhythmia
+23:17:38 | INFO    | Registro 185: 11/13 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 187: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 193: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 195: 7/9 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 198: 6/8 batimentos validos | ritmo: sinus rhythm
+23:17:38 | INFO    | Registro 199: 6/8 batimentos validos | ritmo: sinus rhythm
+====================================================================
+RESUMO DO DATASET LUDB
+====================================================================
+Shape das series      : (390, 234)
+Registros processados : 58
+Candidatos (QRS)      : 581
+Batimentos validos    : 390 (67.1% de aproveitamento)
+  classe 0 (referencia): 107 (27.44%)
+  classe 1 (arritmia) : 283 (72.56%)
+--------------------------------------------------------------------
+Descartes por criterio de inclusao:
+  sem p                 :    107
+  sem t                 :     84
+--------------------------------------------------------------------
+Batimentos sem onda P (ritmos que nao produzem P): 58 (14.9%)
+--------------------------------------------------------------------
+Distribuicao por ritmo (propagado do registro para o batimento):
+  sinus rhythm                 -> classe mista :    255 (65.38%)
+  atrial fibrillation          -> classe 1 :     58 (14.87%)
+  sinus arrhythmia             -> classe mista :     31 (7.95%)
+  sinus tachycardia            -> classe 1 :     24 (6.15%)
+  irregular sinus rhythm       -> classe 1 :     13 (3.33%)
+  sinus bradycardia            -> classe 1 :      9 (2.31%)
+--------------------------------------------------------------------
+Cobertura media das mascaras (fracao da janela anotada):
+  P                     : 14.17%
+  QRS                   : 15.26%
+  T                     : 28.21%
+  P+QRS+T (uniao)       : 57.64%
+  ^ e a pontuacao esperada ao acaso para a metrica de fidelidade
+====================================================================
+
+Dataset salvo em: /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/ludb_shared-extrasystoles-bbb-v1.npz (0.4 MB)

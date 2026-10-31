@@ -1,0 +1,73 @@
+23:19:26 | INFO    | Modelo: 121633 parâmetros treináveis
+23:19:28 | INFO    | epoca 01 | loss 0.0827 acc 0.974 | val_loss 0.4987 acc 0.871 sens 0.714 spec 0.999 ba 0.8567  <- melhor
+23:19:30 | INFO    | epoca 02 | loss 0.0417 acc 0.988 | val_loss 0.6099 acc 0.842 sens 0.648 spec 0.999 ba 0.8237
+23:19:32 | INFO    | epoca 03 | loss 0.0324 acc 0.990 | val_loss 0.4170 acc 0.899 sens 0.777 spec 0.999 ba 0.8881  <- melhor
+23:19:33 | INFO    | epoca 04 | loss 0.0264 acc 0.992 | val_loss 0.5339 acc 0.850 sens 0.667 spec 0.998 ba 0.8327
+23:19:35 | INFO    | epoca 05 | loss 0.0226 acc 0.993 | val_loss 0.6241 acc 0.860 sens 0.692 spec 0.998 ba 0.8448
+23:19:37 | INFO    | epoca 06 | loss 0.0198 acc 0.994 | val_loss 0.4105 acc 0.877 sens 0.736 spec 0.991 ba 0.8636
+23:19:38 | INFO    | epoca 07 | loss 0.0170 acc 0.995 | val_loss 0.6663 acc 0.787 sens 0.530 spec 0.995 ba 0.7629
+23:19:40 | INFO    | epoca 08 | loss 0.0150 acc 0.996 | val_loss 0.7002 acc 0.796 sens 0.650 spec 0.915 ba 0.7824
+23:19:42 | INFO    | epoca 09 | loss 0.0128 acc 0.996 | val_loss 0.6368 acc 0.806 sens 0.617 spec 0.960 ba 0.7884
+23:19:43 | INFO    | epoca 10 | loss 0.0111 acc 0.996 | val_loss 0.4577 acc 0.865 sens 0.764 spec 0.947 ba 0.8558
+23:19:45 | INFO    | epoca 11 | loss 0.0094 acc 0.997 | val_loss 0.5459 acc 0.847 sens 0.734 spec 0.940 ba 0.8369
+23:19:47 | INFO    | epoca 12 | loss 0.0089 acc 0.997 | val_loss 0.8004 acc 0.738 sens 0.463 spec 0.962 ba 0.7127
+23:19:49 | INFO    | epoca 13 | loss 0.0074 acc 0.998 | val_loss 0.7326 acc 0.756 sens 0.510 spec 0.957 ba 0.7335
+23:19:50 | INFO    | epoca 14 | loss 0.0073 acc 0.998 | val_loss 0.9693 acc 0.743 sens 0.472 spec 0.963 ba 0.7176
+23:19:52 | INFO    | epoca 15 | loss 0.0056 acc 0.998 | val_loss 0.8019 acc 0.816 sens 0.642 spec 0.957 ba 0.7996
+23:19:53 | INFO    | epoca 16 | loss 0.0054 acc 0.998 | val_loss 0.6647 acc 0.817 sens 0.599 spec 0.995 ba 0.7971
+23:19:55 | INFO    | epoca 17 | loss 0.0052 acc 0.998 | val_loss 0.7996 acc 0.814 sens 0.598 spec 0.990 ba 0.7937
+23:19:57 | INFO    | epoca 18 | loss 0.0043 acc 0.999 | val_loss 0.8828 acc 0.769 sens 0.571 spec 0.930 ba 0.7505
+23:19:58 | INFO    | epoca 19 | loss 0.0038 acc 0.999 | val_loss 0.5545 acc 0.863 sens 0.801 spec 0.913 ba 0.8573
+23:20:00 | INFO    | epoca 20 | loss 0.0038 acc 0.999 | val_loss 0.8865 acc 0.830 sens 0.668 spec 0.962 ba 0.8150
+Dataset: /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/mitbih_shared-extrasystoles-bbb-v1.npz | 99442 batimentos de 44 registros | device=cuda
+
+============================================================
+RESULTADO DO TREINO (Etapa 3)
+============================================================
+Épocas executadas : 20
+Melhor época      : 3 (val. acurácia balanceada 0.8881)
+Última época      : 20 (val. acurácia balanceada 0.8150)
+[treino | best] n=74332  limiar=0.50
+  acuracia            : 0.9928
+  acuracia balanceada : 0.9838
+  sensibilidade (rec) : 0.9696
+  especificidade      : 0.9980
+  precisao            : 0.9911
+  f1                  : 0.9802
+  auc-roc             : 0.9990
+  confusao            : tp=13243 fn=415 tn=60555 fp=119
+[validacao | best] n=25110  limiar=0.50
+  acuracia            : 0.8995
+  acuracia balanceada : 0.8881
+  sensibilidade (rec) : 0.7770
+  especificidade      : 0.9991
+  precisao            : 0.9986
+  f1                  : 0.8740
+  auc-roc             : 0.9601
+  confusao            : tp=8755 fn=2512 tn=13831 fp=12
+[validacao | ultima epoca] n=25110  limiar=0.50
+  acuracia            : 0.8301
+  acuracia balanceada : 0.8150
+  sensibilidade (rec) : 0.6676
+  especificidade      : 0.9624
+  precisao            : 0.9352
+  f1                  : 0.7791
+  auc-roc             : 0.9340
+  confusao            : tp=7522 fn=3745 tn=13322 fp=521
+[validacao | best | por simbolo] desempenho por grupo
+  grupo                             n  classe   acerto   score
+  N                             13843       0   0.9991  0.0219
+  R                              4948       1   0.6198  0.5656
+  L                              4492       1   0.9114  0.7300
+  V                              1417       1   0.9555  0.9541
+  A                               294       1   0.4796  0.4740
+  a                               116       1   0.8534  0.7734
+============================================================
+
+Checkpoint : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt (best, época 3)
+Última     : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model_last.pt (época 20, não usado no LUDB)
+Métricas   : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/metrics.json
+Histórico  : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/history.csv
+
+Próximo passo (teste independente):
+  python src/test_ludb.py --checkpoint /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt

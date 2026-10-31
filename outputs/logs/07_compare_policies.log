@@ -1,0 +1,31 @@
+================================================================
+VALIDACAO DE ARTEFATOS
+================================================================
+  SEM_BLOQUEIO         28/28 ok
+  COM_BLOQUEIO         28/28 ok
+  invariantes          25/25 ok
+  subconjunto_comum    4/4 ok
+================================================================
+MESMOS BEATS SEM x COM: n=192 (classe 0: 107, classe 1: 85)
+[modelo SEM | mesmos beats] n=192  limiar=0.50
+  acuracia            : 0.6667
+  acuracia balanceada : 0.6235
+  sensibilidade (rec) : 0.2471
+  especificidade      : 1.0000
+  precisao            : 1.0000
+  f1                  : 0.3962
+  auc-roc             : 0.7664
+  confusao            : tp=21 fn=64 tn=107 fp=0
+[modelo COM | mesmos beats] n=192  limiar=0.50
+  acuracia            : 0.6406
+  acuracia balanceada : 0.5965
+  sensibilidade (rec) : 0.2118
+  especificidade      : 0.9813
+  precisao            : 0.9000
+  f1                  : 0.3429
+  auc-roc             : 0.7351
+  confusao            : tp=18 fn=67 tn=105 fp=2
+  transicoes y_pred SEM->COM: {'0->0': 169, '0->1': 2, '1->0': 3, '1->1': 18}
+================================================================
+Resultados : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/comparacao_politicas/comparacao_sem_vs_com.json
+Por beat   : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/comparacao_politicas/comparacao_sem_vs_com_beats.npz

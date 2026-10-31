@@ -5,7 +5,7 @@ Pipeline (Etapa 2 do projeto, conjunto de treino):
     -> segmentacao beat-to-beat centrada no pico R
     -> descarte de anotacoes non-beat
     -> Z-normalization por batimento
-    -> rotulagem binaria (0 = nao-arritmia, 1 = arritmia)
+    -> rotulagem binaria conforme a politica compartilhada explicita
 """
 
 from __future__ import annotations
@@ -35,8 +35,7 @@ class PreprocessConfig:
     window_left: int = config.WINDOW_LEFT
     window_right: int = config.WINDOW_RIGHT
     non_beat_symbols: frozenset[str] = config.NON_BEAT_SYMBOLS
-    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA
-    include_paced: bool = False
+    classification_policy: str = config.CLASSIFICATION_POLICY
     normalize: bool = True
     data_dir: Path | None = None  # None => leitura direta do PhysioNet
 
@@ -48,6 +47,7 @@ class PreprocessConfig:
         """Serializa os parametros para gravacao junto ao dataset."""
         return {
             "dataset": "mit-bih-arrhythmia",
+            "dataset_version": config.MITBIH_VERSION,
             "fs_hz": config.MITBIH_FS,
             "records": list(self.records),
             "lead": self.lead,
@@ -55,10 +55,11 @@ class PreprocessConfig:
             "window_right": self.window_right,
             "window_size": self.window_size,
             "non_beat_symbols": sorted(self.non_beat_symbols),
-            "normal_symbols": sorted(s for s in classification.MIT_KNOWN_SYMBOLS
-                                     if classification.mit_label(s, self.only_arrhythmia, self.include_paced) == 0),
+            "negative_symbols": sorted(
+                classification.get_policy(self.classification_policy).mit_negative_symbols
+            ),
             "normalization": "z-score per beat" if self.normalize else "none",
-            **classification.metadata(self.only_arrhythmia, self.include_paced),
+            **classification.metadata(self.classification_policy),
         }
 
 
@@ -116,12 +117,12 @@ def load_record_beats(
         ValueError: se a derivacao alvo nao existir no registro.
     """
     cfg = cfg or PreprocessConfig()
-    if record_id in classification.MIT_PACED_RECORDS and not cfg.include_paced:
+    if record_id in classification.MIT_PACED_RECORDS:
         raise classification.ClassificationError(f"Registro {record_id}: pacing fora da metodologia.")
     record, annotation = _read_record(record_id, cfg.data_dir)
 
     # Validar antes de segment_beats converter simbolos para strings <U2.
-    unexpected = set(annotation.symbol) - config.NON_BEAT_SYMBOLS - classification.MIT_KNOWN_SYMBOLS
+    unexpected = set(annotation.symbol) - config.NON_BEAT_SYMBOLS - classification.MIT_ALL_BEAT_SYMBOLS
     if unexpected:
         raise classification.ClassificationError(
             f"Registro {record_id}: simbolos desconhecidos {sorted(unexpected)!r}."
@@ -160,13 +161,16 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     all_symbols: list[np.ndarray] = []
     all_peaks: list[np.ndarray] = []
     all_patients: list[np.ndarray] = []
+    all_subjects: list[np.ndarray] = []
+    all_beat_ids: list[np.ndarray] = []
+    all_selection_indices: list[np.ndarray] = []
     skipped: list[str] = []
-    excluded_symbols = classification.MIT_EXCLUDED_SYMBOLS | (
-        frozenset() if cfg.include_paced else classification.MIT_PACED_SYMBOLS
-    )
+    # Exclusao de beats independente da opcao de inclusao de registros paced.
+    policy = classification.get_policy(cfg.classification_policy)
+    excluded_symbols = policy.mit_excluded_symbols
     excluded_counts = {symbol: 0 for symbol in sorted(excluded_symbols)}
     excluded_by_record: dict[str, dict[str, int]] = {}
-    paced_records = [r for r in cfg.records if r in classification.MIT_PACED_RECORDS and not cfg.include_paced]
+    paced_records = [r for r in cfg.records if r in classification.MIT_PACED_RECORDS]
 
     for record_id in cfg.records:
         if record_id in paced_records:
@@ -184,7 +188,9 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         excluded_by_record[record_id] = removed
         for symbol, count in removed.items():
             excluded_counts[symbol] += count
-        keep = ~np.isin(symbols, list(excluded_symbols))
+        selection_indices = np.flatnonzero(~np.isin(symbols, list(excluded_symbols)))
+        keep = np.zeros(symbols.shape, dtype=bool)
+        keep[selection_indices] = True
         segments, symbols, peaks = segments[keep], symbols[keep], peaks[keep]
 
         if segments.shape[0] == 0:
@@ -197,6 +203,16 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         all_symbols.append(symbols)
         all_peaks.append(peaks)
         all_patients.append(np.full(segments.shape[0], record_id, dtype="<U4"))
+        subject_id = classification.mit_subject_id(record_id)
+        all_subjects.append(np.full(segments.shape[0], subject_id, dtype="<U4"))
+        all_beat_ids.append(np.asarray([
+            (
+                f"mit-bih-arrhythmia:{config.MITBIH_VERSION}:{record_id}:{cfg.lead}:"
+                f"r{int(peak)}:w{cfg.window_left}-{cfg.window_right}:sel{int(index)}"
+            )
+            for peak, index in zip(peaks, selection_indices)
+        ]))
+        all_selection_indices.append(selection_indices.astype(np.int64))
 
     if not all_segments:
         raise RuntimeError("Nenhum batimento extraido — verifique os registros.")
@@ -205,16 +221,20 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
     simbolos = np.concatenate(all_symbols, axis=0)
     r_peaks = np.concatenate(all_peaks, axis=0)
     pacientes = np.concatenate(all_patients, axis=0)
+    subject_ids = np.concatenate(all_subjects, axis=0)
+    beat_ids = np.concatenate(all_beat_ids, axis=0)
+    selection_indices = np.concatenate(all_selection_indices, axis=0)
 
     if cfg.normalize:
         series = signals.z_normalize_per_beat(series)
 
-    labels = signals.encode_binary_labels(simbolos, cfg.only_arrhythmia, cfg.include_paced)
+    labels = signals.encode_binary_labels(simbolos, cfg.classification_policy)
 
     metadata = cfg.to_metadata()
     metadata["records_processados"] = [r for r in cfg.records if r not in skipped and r not in paced_records]
     metadata["records_excluidos_pacing"] = sorted(paced_records)
-    metadata["records_pacing_fora_da_politica"] = [] if cfg.include_paced else sorted(classification.MIT_PACED_RECORDS)
+    metadata["records_pacing_fora_da_politica"] = sorted(classification.MIT_PACED_RECORDS)
+    metadata["subject_overrides"] = dict(classification.MIT_SUBJECT_BY_RECORD)
     metadata["simbolos_excluidos_apos_bordas"] = excluded_counts
     metadata["simbolos_excluidos_por_registro"] = excluded_by_record
     metadata["records_ignorados"] = skipped
@@ -232,6 +252,9 @@ def build_dataset(cfg: PreprocessConfig | None = None) -> dict:
         "labels": labels,
         "simbolos": simbolos,
         "pacientes": pacientes,
+        "subject_ids": subject_ids,
+        "beat_ids": beat_ids,
+        "selection_indices": selection_indices,
         "r_peaks": r_peaks,
         "metadata": metadata,
     }
@@ -258,8 +281,8 @@ def summarize(dataset: dict) -> str:
         f"Shape das series      : {series.shape}",
         f"Registros processados : {len(np.unique(pacientes))}",
         f"Total de batimentos   : {total}",
-        f"  classe 0 (normal)   : {n_normal} ({100 * n_normal / total:.2f}%)",
-        f"  classe 1 (arritmia) : {n_arr} ({100 * n_arr / total:.2f}%)",
+        f"  classe 0 (referencia) : {n_normal} ({100 * n_normal / total:.2f}%)",
+        f"  classe 1 (alvo)       : {n_arr} ({100 * n_arr / total:.2f}%)",
         "-" * 60,
         "Distribuicao por simbolo original:",
     ]

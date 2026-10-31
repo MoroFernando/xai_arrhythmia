@@ -1,0 +1,61 @@
+23:17:29 | INFO    | Registro 100: 2271 batimentos
+23:17:30 | INFO    | Registro 101: 1862 batimentos
+23:17:30 | INFO    | Registro 103: 2083 batimentos
+23:17:30 | INFO    | Registro 105: 2567 batimentos
+23:17:30 | INFO    | Registro 106: 2027 batimentos
+23:17:30 | INFO    | Registro 108: 1759 batimentos
+23:17:30 | INFO    | Registro 109: 38 batimentos
+23:17:30 | INFO    | Registro 111: 1 batimentos
+23:17:30 | INFO    | Registro 112: 2538 batimentos
+23:17:30 | INFO    | Registro 113: 1794 batimentos
+23:17:30 | INFO    | Registro 114: 1873 batimentos
+23:17:30 | INFO    | Registro 115: 1952 batimentos
+23:17:30 | INFO    | Registro 116: 2411 batimentos
+23:17:30 | INFO    | Registro 117: 1534 batimentos
+23:17:30 | INFO    | Registro 118: 112 batimentos
+23:17:30 | INFO    | Registro 119: 1987 batimentos
+23:17:30 | INFO    | Registro 121: 1862 batimentos
+23:17:30 | INFO    | Registro 122: 2475 batimentos
+23:17:30 | INFO    | Registro 123: 1517 batimentos
+23:17:30 | INFO    | Registro 124: 49 batimentos
+23:17:30 | INFO    | Registro 200: 2598 batimentos
+23:17:30 | INFO    | Registro 201: 1950 batimentos
+23:17:30 | INFO    | Registro 202: 2134 batimentos
+23:17:30 | INFO    | Registro 203: 2975 batimentos
+23:17:30 | INFO    | Registro 205: 2644 batimentos
+23:17:30 | INFO    | Registro 207: 212 batimentos
+23:17:30 | INFO    | Registro 208: 2577 batimentos
+23:17:30 | INFO    | Registro 209: 3004 batimentos
+23:17:30 | INFO    | Registro 210: 2637 batimentos
+23:17:30 | INFO    | Registro 212: 922 batimentos
+23:17:30 | INFO    | Registro 213: 2888 batimentos
+23:17:30 | INFO    | Registro 214: 256 batimentos
+23:17:30 | INFO    | Registro 215: 3361 batimentos
+23:17:30 | INFO    | Registro 219: 2153 batimentos
+23:17:30 | INFO    | Registro 220: 2046 batimentos
+23:17:30 | INFO    | Registro 221: 2427 batimentos
+23:17:30 | INFO    | Registro 222: 2268 batimentos
+23:17:30 | INFO    | Registro 223: 2575 batimentos
+23:17:31 | INFO    | Registro 228: 2053 batimentos
+23:17:31 | INFO    | Registro 230: 2255 batimentos
+23:17:31 | INFO    | Registro 231: 317 batimentos
+23:17:31 | INFO    | Registro 232: 1382 batimentos
+23:17:31 | INFO    | Registro 233: 3066 batimentos
+23:17:31 | INFO    | Registro 234: 2703 batimentos
+============================================================
+RESUMO DO DATASET MIT-BIH
+============================================================
+Shape das series      : (84115, 234)
+Registros processados : 44
+Total de batimentos   : 84115
+  classe 0 (referencia) : 74517 (88.59%)
+  classe 1 (alvo)       : 9598 (11.41%)
+------------------------------------------------------------
+Distribuicao por simbolo original:
+  N   -> classe 0 :   74517 (88.59%)
+  V   -> classe 1 :    6902 (8.21%)
+  A   -> classe 1 :    2546 (3.03%)
+  a   -> classe 1 :     150 (0.18%)
+============================================================
+
+Dataset salvo em: /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/mitbih_shared-extrasystoles-v1.npz (43.0 MB)

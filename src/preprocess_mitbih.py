@@ -7,8 +7,8 @@ Exemplos:
     # Processa lendo direto do PhysioNet (sem cache local)
     python src/preprocess_mitbih.py --stream
 
-    # Ativa a politica restrita do projeto (nao e AAMI)
-    python src/preprocess_mitbih.py --only-arrhythmia
+    # Executa a politica com bloqueios de ramo
+    python src/preprocess_mitbih.py --classification-policy shared-extrasystoles-bbb-v1
 """
 
 from __future__ import annotations
@@ -89,9 +89,7 @@ def main() -> int:
         datefmt="%H:%M:%S",
     )
 
-    records = (
-        config.MITBIH_RECORDS_ALL if args.include_paced else config.MITBIH_RECORDS
-    )
+    records = config.MITBIH_RECORDS
 
     if args.download:
         mitbih.download_records(records=records, dest_dir=args.data_dir)
@@ -101,8 +99,7 @@ def main() -> int:
         lead=args.lead,
         window_left=args.window_left,
         window_right=args.window_right,
-        only_arrhythmia=args.only_arrhythmia,
-        include_paced=args.include_paced,
+        classification_policy=args.classification_policy,
         normalize=not args.no_normalize,
         data_dir=None if args.stream else args.data_dir,
     )
@@ -116,6 +113,9 @@ def main() -> int:
         labels=dataset["labels"],
         simbolos=dataset["simbolos"],
         pacientes=dataset["pacientes"],
+        subject_ids=dataset["subject_ids"],
+        beat_ids=dataset["beat_ids"],
+        selection_indices=dataset["selection_indices"],
         metadata=dataset["metadata"],
         r_peaks=dataset["r_peaks"],
     )

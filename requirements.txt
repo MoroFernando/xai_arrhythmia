@@ -1,20 +1,12 @@
-# Dependencias do projeto. Crie o ambiente com a versao de Python especificada
-# no README (conda create -n xai-arrhythmia python=3.11) e instale com:
-#   pip install -r requirements.txt
-#
-# --extra-index-url abaixo e o que faz "torch" resolver para uma build com
-# suporte a CUDA em vez da build CPU-only que o PyPI serve por padrao no
-# Windows. cu124 funciona com qualquer driver NVIDIA que suporte CUDA 12.4+
-# (praticamente todo driver de 2024 em diante — confira com `nvidia-smi`).
-# Sem GPU, a mesma linha ainda instala normalmente: o pip cai de volta para o
-# PyPI puro e traz a build CPU.
---extra-index-url https://download.pytorch.org/whl/cu124
+# Dependencias gerais. Instale PyTorch separadamente ANTES deste arquivo.
+# Ambiente da execucao: Python 3.11.17, torch 2.11.0+cu128.
+# Consulte AMBIENTE_REPRODUTIBILIDADE.md e requirements-pytorch-cu128.txt.
+# Limites minimos preservados; este arquivo NAO e um lockfile da execucao.
 numpy>=1.26
 scipy>=1.11
 pandas>=2.1
 matplotlib>=3.8
 tqdm>=4.66
 wfdb>=4.1.2
-torch>=2.2
 scikit-learn>=1.4
 ipykernel>=6.29

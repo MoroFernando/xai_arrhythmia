@@ -1,0 +1,73 @@
+{
+  "classification_policy": "shared-extrasystoles-bbb-v1",
+  "classification_policy_display_name": "COM_BLOQUEIO",
+  "classification_policy_version": 1,
+  "classification_policy_schema_version": 1,
+  "mit_negative_symbols": [
+    "N"
+  ],
+  "mit_positive_symbols": [
+    "A",
+    "L",
+    "R",
+    "V",
+    "a"
+  ],
+  "mit_excluded_symbols": [
+    "/",
+    "E",
+    "F",
+    "J",
+    "Q",
+    "S",
+    "e",
+    "f",
+    "j"
+  ],
+  "ludb_target_families": [
+    "atrial_extrasystole",
+    "ventricular_extrasystole",
+    "lbbb",
+    "rbbb"
+  ],
+  "ludb_negative_reference": {
+    "electric_axis": [
+      "Electric axis of the heart: normal"
+    ],
+    "empty_categories": [
+      "conduction_abnormalities",
+      "extrasystolies",
+      "hypertrophies",
+      "cardiac_pacing",
+      "ischemia",
+      "repolarization",
+      "other_states"
+    ],
+    "rhythms_affect_label": false
+  },
+  "pacing_policy": "excluded",
+  "label_encoding": {
+    "0": "referencia negativa selecionada para a tarefa",
+    "1": "familia compartilhada definida pela politica",
+    "excluded": "fora da tarefa compartilhada"
+  },
+  "dataset_sha256": "d458c1a655daefce78cf1deea5f3369ab8ffe16c8695ee33556b72f8759addb6",
+  "checkpoint_sha256": "563e47dc0d34dc45d3a65da2e8cd4a9765213b38a3aa7f745f6ee5d81aca69eb",
+  "checkpoint_role": "best",
+  "checkpoint_epoch": 3,
+  "split_manifest_sha256": "5604cac2460a12cdeec86bc66ab6eb3a761a9f490878ea928e9abc4c6c83aa3c",
+  "predictions_sha256": "f5fa1ac6f2fad571aa76bc2715a0b391adb06e6a0e8d10a35f33ee4c7a245b10",
+  "criado_em": "2026-10-30T02:20:05+00:00",
+  "etapa": "4 - extracao do Grad-CAM 1D (LUDB)",
+  "checkpoint": "outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt",
+  "dataset": "data/processed/ludb_shared-extrasystoles-bbb-v1.npz",
+  "camada_alvo": "conv2 (ultima camada convolucional)",
+  "n_batimentos": 390,
+  "tamanho_janela": 234,
+  "interpolacao": "linear (F.interpolate) direto para o tamanho da janela",
+  "threshold": 0.5,
+  "acuracia_referencia": 0.3923076923076923,
+  "predictions": "outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/teste_ludb/ludb_predictions.npz",
+  "max_abs_diff_score_vs_predictions": 2.115964889526367e-06,
+  "observacao": "cam_interp esta alinhado por indice com o dataset do LUDB e com outputs/models/<run>/teste_ludb/ludb_predictions.npz."
+}

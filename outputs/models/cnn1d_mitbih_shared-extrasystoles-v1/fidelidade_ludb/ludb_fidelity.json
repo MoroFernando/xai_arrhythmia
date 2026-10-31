@@ -1,0 +1,680 @@
+{
+  "classification_policy": "shared-extrasystoles-v1",
+  "classification_policy_display_name": "SEM_BLOQUEIO",
+  "classification_policy_version": 1,
+  "classification_policy_schema_version": 1,
+  "mit_negative_symbols": [
+    "N"
+  ],
+  "mit_positive_symbols": [
+    "A",
+    "V",
+    "a"
+  ],
+  "mit_excluded_symbols": [
+    "/",
+    "E",
+    "F",
+    "J",
+    "L",
+    "Q",
+    "R",
+    "S",
+    "e",
+    "f",
+    "j"
+  ],
+  "ludb_target_families": [
+    "atrial_extrasystole",
+    "ventricular_extrasystole"
+  ],
+  "ludb_negative_reference": {
+    "electric_axis": [
+      "Electric axis of the heart: normal"
+    ],
+    "empty_categories": [
+      "conduction_abnormalities",
+      "extrasystolies",
+      "hypertrophies",
+      "cardiac_pacing",
+      "ischemia",
+      "repolarization",
+      "other_states"
+    ],
+    "rhythms_affect_label": false
+  },
+  "pacing_policy": "excluded",
+  "label_encoding": {
+    "0": "referencia negativa selecionada para a tarefa",
+    "1": "familia compartilhada definida pela politica",
+    "excluded": "fora da tarefa compartilhada"
+  },
+  "dataset_sha256": "ab163fa56f36b5e80c5119f1d21c8c965453a1d9f3617ae65e6837b655990b77",
+  "checkpoint_sha256": "844d63ba6b9f179440f65edc59412fb24973cc2aac7530da17d8c01265b07dd6",
+  "checkpoint_role": "best",
+  "checkpoint_epoch": 2,
+  "predictions_sha256": "017ae98f916c2b331fd91d7dd8e2c42f328e5729339beb556627f80dcf5d6ff5",
+  "gradcam_sha256": "eaa62828b25f2a8f35b2ff2ec0fc44bfa0a195278ad119ecb7b05fc8ad0299f3",
+  "split_manifest_sha256": "5604cac2460a12cdeec86bc66ab6eb3a761a9f490878ea928e9abc4c6c83aa3c",
+  "criado_em": "2026-10-30T02:19:24+00:00",
+  "etapa": "4 - fidelidade quantitativa do Grad-CAM (LUDB)",
+  "gradcam": "outputs/models/cnn1d_mitbih_shared-extrasystoles-v1/gradcam_ludb/ludb_gradcam.npz",
+  "dataset": "data/processed/ludb_shared-extrasystoles-v1.npz",
+  "n_batimentos": 192,
+  "tamanho_janela": 234,
+  "limiar_cam": 0.5,
+  "metrica": "IoU entre (cam_interp >= limiar_cam) e a mascara clinica (uniao P+QRS+T), batimento a batimento; uniao vazia -> ignorado",
+  "geral": {
+    "n": 192,
+    "n_avaliados": 192,
+    "iou_medio": 0.11412447781357737,
+    "iou_mediana": 0.0921519223590892,
+    "iou_pred_0": 0.10391089019508909,
+    "iou_pred_1": 0.1972922627069821,
+    "iou_real_0": 0.08309027113143544,
+    "iou_real_1": 0.15319106740168548,
+    "iou_correct": 0.10182653537429859,
+    "iou_incorrect": 0.138720362692135,
+    "cobertura_acaso": 0.5762775997150997,
+    "acima_do_acaso": -0.46215312190152236
+  },
+  "por_estrutura": {
+    "P (mascara_p)": {
+      "n": 192,
+      "n_avaliados": 192,
+      "iou_medio": 0.0027140630428359454,
+      "iou_mediana": 0.0,
+      "iou_pred_0": 0.0019250345748848515,
+      "iou_pred_1": 0.009139009139009138,
+      "iou_real_0": 0.0,
+      "iou_real_1": 0.006130589461464724,
+      "iou_correct": 0.0014993686868686868,
+      "iou_incorrect": 0.0051434517547704625
+    },
+    "QRS (mascara_qrs)": {
+      "n": 192,
+      "n_avaliados": 192,
+      "iou_medio": 0.3500645351260867,
+      "iou_mediana": 0.3445054945054945,
+      "iou_pred_0": 0.3488032994244711,
+      "iou_pred_1": 0.3603345972678136,
+      "iou_real_0": 0.33582777497419675,
+      "iou_real_1": 0.3679861037878774,
+      "iou_correct": 0.3398484255067433,
+      "iou_incorrect": 0.37049675436477336
+    },
+    "T (mascara_t)": {
+      "n": 192,
+      "n_avaliados": 192,
+      "iou_medio": 0.025933583068938792,
+      "iou_mediana": 0.0,
+      "iou_pred_0": 0.0181200516179018,
+      "iou_pred_1": 0.08955805345595425,
+      "iou_real_0": 0.0052837592331937714,
+      "iou_real_1": 0.05192806719158252,
+      "iou_correct": 0.019110010629115413,
+      "iou_incorrect": 0.03958072794858554
+    }
+  },
+  "iou_por_familia": [
+    {
+      "grupo": "atrial_extrasystole",
+      "n": 36,
+      "n_avaliados": 36,
+      "iou_medio": 0.1458908888177005,
+      "iou_mediana": 0.10039351185334486
+    },
+    {
+      "grupo": "ventricular_extrasystole",
+      "n": 49,
+      "n_avaliados": 49,
+      "iou_medio": 0.15855446391236835,
+      "iou_mediana": 0.13333333333333333
+    }
+  ],
+  "iou_por_subtipo": [
+    {
+      "grupo": "Atrial extrasystole, type: allorhythmic pattern",
+      "n": 6,
+      "n_avaliados": 6,
+      "iou_medio": 0.07028337672395896,
+      "iou_mediana": 0.0705244122965642
+    },
+    {
+      "grupo": "Atrial extrasystole, type: bigemini",
+      "n": 6,
+      "n_avaliados": 6,
+      "iou_medio": 0.07028337672395896,
+      "iou_mediana": 0.0705244122965642
+    },
+    {
+      "grupo": "Atrial extrasystole, type: quadrigemini",
+      "n": 7,
+      "n_avaliados": 7,
+      "iou_medio": 0.16583884511735955,
+      "iou_mediana": 0.12080536912751678
+    },
+    {
+      "grupo": "Atrial extrasystole, type: single pac",
+      "n": 14,
+      "n_avaliados": 14,
+      "iou_medio": 0.20189272216847648,
+      "iou_mediana": 0.14138176638176636
+    },
+    {
+      "grupo": "Atrial extrasystole: left atrial",
+      "n": 9,
+      "n_avaliados": 9,
+      "iou_medio": 0.155817503271615,
+      "iou_mediana": 0.12080536912751678
+    },
+    {
+      "grupo": "Atrial extrasystole: low atrial",
+      "n": 4,
+      "n_avaliados": 4,
+      "iou_medio": 0.10855681492611761,
+      "iou_mediana": 0.09728792179123305
+    },
+    {
+      "grupo": "Atrial extrasystole: sa-nodal extrasystole",
+      "n": 14,
+      "n_avaliados": 14,
+      "iou_medio": 0.18374896409820965,
+      "iou_mediana": 0.07668436096365863
+    },
+    {
+      "grupo": "Atrial extrasystole: undefined",
+      "n": 11,
+      "n_avaliados": 11,
+      "iou_medio": 0.09858975677602669,
+      "iou_mediana": 0.0916030534351145
+    },
+    {
+      "grupo": "Ventricular extrasystole, localisation: ivs, middle part",
+      "n": 6,
+      "n_avaliados": 6,
+      "iou_medio": 0.08988233534298458,
+      "iou_mediana": 0.0888937664618086
+    },
+    {
+      "grupo": "Ventricular extrasystole, localisation: lvot, lvs",
+      "n": 19,
+      "n_avaliados": 19,
+      "iou_medio": 0.21516292985105095,
+      "iou_mediana": 0.17346938775510204
+    },
+    {
+      "grupo": "Ventricular extrasystole, localisation: rvot, anterior wall",
+      "n": 14,
+      "n_avaliados": 14,
+      "iou_medio": 0.1336111240063647,
+      "iou_mediana": 0.1327823691460055
+    },
+    {
+      "grupo": "Ventricular extrasystole, localisation: rvot, antero-septal part",
+      "n": 10,
+      "n_avaliados": 10,
+      "iou_medio": 0.12712233163890682,
+      "iou_mediana": 0.12678571428571428
+    },
+    {
+      "grupo": "Ventricular extrasystole, morphology: polymorphic",
+      "n": 7,
+      "n_avaliados": 7,
+      "iou_medio": 0.19906542910175276,
+      "iou_mediana": 0.18382352941176472
+    },
+    {
+      "grupo": "Ventricular extrasystole, type: couplet",
+      "n": 7,
+      "n_avaliados": 7,
+      "iou_medio": 0.19906542910175276,
+      "iou_mediana": 0.18382352941176472
+    },
+    {
+      "grupo": "Ventricular extrasystole, type: intercalary pvc",
+      "n": 20,
+      "n_avaliados": 20,
+      "iou_medio": 0.12049248740735068,
+      "iou_mediana": 0.1249467858663261
+    },
+    {
+      "grupo": "Ventricular extrasystole, type: single pvc",
+      "n": 49,
+      "n_avaliados": 49,
+      "iou_medio": 0.15855446391236835,
+      "iou_mediana": 0.13333333333333333
+    }
+  ],
+  "iou_referencia_negativa": {
+    "n": 107,
+    "n_avaliados": 107,
+    "iou_medio": 0.08309027113143544,
+    "iou_mediana": 0.08
+  },
+  "iou_coarse_groups": {
+    "extrasystoles": {
+      "n": 85,
+      "n_avaliados": 85,
+      "iou_medio": 0.15319106740168548,
+      "iou_mediana": 0.125
+    }
+  },
+  "iou_por_estrutura_e_grupo": {
+    "P (mascara_p)": {
+      "por_familia": [
+        {
+          "grupo": "atrial_extrasystole",
+          "n": 36,
+          "n_avaliados": 36,
+          "iou_medio": 0.01447500289512504,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "ventricular_extrasystole",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        }
+      ],
+      "por_subtipo": [
+        {
+          "grupo": "Atrial extrasystole, type: allorhythmic pattern",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: bigemini",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: quadrigemini",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.010822510822510822,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: single pac",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.03181018060478041,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: left atrial",
+          "n": 9,
+          "n_avaliados": 9,
+          "iou_medio": 0.008417508417508417,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: low atrial",
+          "n": 4,
+          "n_avaliados": 4,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: sa-nodal extrasystole",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.03181018060478041,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: undefined",
+          "n": 11,
+          "n_avaliados": 11,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: ivs, middle part",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: lvot, lvs",
+          "n": 19,
+          "n_avaliados": 19,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, anterior wall",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, antero-septal part",
+          "n": 10,
+          "n_avaliados": 10,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, morphology: polymorphic",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: couplet",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: intercalary pvc",
+          "n": 20,
+          "n_avaliados": 20,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: single pvc",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        }
+      ],
+      "referencia_negativa": {
+        "n": 107,
+        "n_avaliados": 107,
+        "iou_medio": 0.0,
+        "iou_mediana": 0.0
+      }
+    },
+    "QRS (mascara_qrs)": {
+      "por_familia": [
+        {
+          "grupo": "atrial_extrasystole",
+          "n": 36,
+          "n_avaliados": 36,
+          "iou_medio": 0.3703917094015403,
+          "iou_mediana": 0.3514705882352941
+        },
+        {
+          "grupo": "ventricular_extrasystole",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.36621872007171685,
+          "iou_mediana": 0.35294117647058826
+        }
+      ],
+      "por_subtipo": [
+        {
+          "grupo": "Atrial extrasystole, type: allorhythmic pattern",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.3156391414455931,
+          "iou_mediana": 0.3142857142857143
+        },
+        {
+          "grupo": "Atrial extrasystole, type: bigemini",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.3156391414455931,
+          "iou_mediana": 0.3142857142857143
+        },
+        {
+          "grupo": "Atrial extrasystole, type: quadrigemini",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.437263998953313,
+          "iou_mediana": 0.4444444444444444
+        },
+        {
+          "grupo": "Atrial extrasystole, type: single pac",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.3760347869524529,
+          "iou_mediana": 0.36524500907441015
+        },
+        {
+          "grupo": "Atrial extrasystole: left atrial",
+          "n": 9,
+          "n_avaliados": 9,
+          "iou_medio": 0.43589367940271234,
+          "iou_mediana": 0.4444444444444444
+        },
+        {
+          "grupo": "Atrial extrasystole: low atrial",
+          "n": 4,
+          "n_avaliados": 4,
+          "iou_medio": 0.34237379162191195,
+          "iou_mediana": 0.3684210526315789
+        },
+        {
+          "grupo": "Atrial extrasystole: sa-nodal extrasystole",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.3519022555406451,
+          "iou_mediana": 0.3335907335907336
+        },
+        {
+          "grupo": "Atrial extrasystole: undefined",
+          "n": 11,
+          "n_avaliados": 11,
+          "iou_medio": 0.3615569819750528,
+          "iou_mediana": 0.35
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: ivs, middle part",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.34581398348813214,
+          "iou_mediana": 0.36397058823529416
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: lvot, lvs",
+          "n": 19,
+          "n_avaliados": 19,
+          "iou_medio": 0.29925668910764375,
+          "iou_mediana": 0.32786885245901637
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, anterior wall",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.3002618444737543,
+          "iou_mediana": 0.305019305019305
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, antero-septal part",
+          "n": 10,
+          "n_avaliados": 10,
+          "iou_medio": 0.5980290466907541,
+          "iou_mediana": 0.6004464285714286
+        },
+        {
+          "grupo": "Ventricular extrasystole, morphology: polymorphic",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.3810399393288363,
+          "iou_mediana": 0.38461538461538464
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: couplet",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.3810399393288363,
+          "iou_mediana": 0.38461538461538464
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: intercalary pvc",
+          "n": 20,
+          "n_avaliados": 20,
+          "iou_medio": 0.31392748617806765,
+          "iou_mediana": 0.32432432432432434
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: single pvc",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.36621872007171685,
+          "iou_mediana": 0.35294117647058826
+        }
+      ],
+      "referencia_negativa": {
+        "n": 107,
+        "n_avaliados": 107,
+        "iou_medio": 0.33582777497419675,
+        "iou_mediana": 0.34210526315789475
+      }
+    },
+    "T (mascara_t)": {
+      "por_familia": [
+        {
+          "grupo": "atrial_extrasystole",
+          "n": 36,
+          "n_avaliados": 36,
+          "iou_medio": 0.05279513716214347,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "ventricular_extrasystole",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.05129103619280305,
+          "iou_mediana": 0.0
+        }
+      ],
+      "por_subtipo": [
+        {
+          "grupo": "Atrial extrasystole, type: allorhythmic pattern",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: bigemini",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: quadrigemini",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.07710575139146568,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole, type: single pac",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.0972060484354932,
+          "iou_mediana": 0.015
+        },
+        {
+          "grupo": "Atrial extrasystole: left atrial",
+          "n": 9,
+          "n_avaliados": 9,
+          "iou_medio": 0.059971139971139974,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: low atrial",
+          "n": 4,
+          "n_avaliados": 4,
+          "iou_medio": 0.03333333333333333,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: sa-nodal extrasystole",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.08768223891168368,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Atrial extrasystole: undefined",
+          "n": 11,
+          "n_avaliados": 11,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: ivs, middle part",
+          "n": 6,
+          "n_avaliados": 6,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: lvot, lvs",
+          "n": 19,
+          "n_avaliados": 19,
+          "iou_medio": 0.1186261691519296,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, anterior wall",
+          "n": 14,
+          "n_avaliados": 14,
+          "iou_medio": 0.018525968540049082,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, localisation: rvot, antero-septal part",
+          "n": 10,
+          "n_avaliados": 10,
+          "iou_medio": 0.0,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, morphology: polymorphic",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.03808470290771176,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: couplet",
+          "n": 7,
+          "n_avaliados": 7,
+          "iou_medio": 0.03808470290771176,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: intercalary pvc",
+          "n": 20,
+          "n_avaliados": 20,
+          "iou_medio": 0.012968177978034356,
+          "iou_mediana": 0.0
+        },
+        {
+          "grupo": "Ventricular extrasystole, type: single pvc",
+          "n": 49,
+          "n_avaliados": 49,
+          "iou_medio": 0.05129103619280305,
+          "iou_mediana": 0.0
+        }
+      ],
+      "referencia_negativa": {
+        "n": 107,
+        "n_avaliados": 107,
+        "iou_medio": 0.0052837592331937714,
+        "iou_mediana": 0.0
+      }
+    }
+  },
+  "observacao": "iou_por_batimento em ludb_fidelity.npz esta alinhado por indice com ludb_gradcam.npz e com o dataset do LUDB."
+}

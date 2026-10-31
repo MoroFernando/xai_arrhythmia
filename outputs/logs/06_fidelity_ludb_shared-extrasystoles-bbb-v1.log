@@ -1,0 +1,26 @@
+================================================================
+FIDELIDADE DO GRAD-CAM NO LUDB (Etapa 4, parte 2)
+================================================================
+Grad-CAM  : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/gradcam_ludb/ludb_gradcam.npz
+Dataset   : /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/ludb_shared-extrasystoles-bbb-v1.npz
+  390 batimentos | janela de 234 amostras
+Limiar CAM : 0.50 (mapa normalizado em [0, 1])
+----------------------------------------------------------------
+[LUDB] fidelidade do Grad-CAM  (limiar_cam=0.50)
+  batimentos              : 390  (avaliados: 390)
+  IoU medio (clinica)     : 0.1186
+  IoU mediana             : 0.1103
+  IoU | previu arritmia   : 0.1393
+  IoU | previu normal     : 0.1156
+  IoU | e arritmia (real) : 0.1220
+  IoU | e normal (real)   : 0.1096
+  esperado ao acaso       : 0.5764
+  acima do acaso          : -0.4578
+  IoU por estrutura:
+    P (mascara_p)       : 0.0114 (avaliados: 385)
+    QRS (mascara_qrs)   : 0.3292 (avaliados: 390)
+    T (mascara_t)       : 0.0477 (avaliados: 390)
+================================================================
+
+IoU por batimento : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/fidelidade_ludb/ludb_fidelity.npz
+Metadados         : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/fidelidade_ludb/ludb_fidelity.json

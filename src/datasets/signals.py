@@ -200,16 +200,15 @@ def z_normalize_per_beat(X: np.ndarray, eps: float = 1e-8) -> np.ndarray:
 
 def encode_binary_labels(
     symbols: Sequence[str],
-    only_arrhythmia: bool = config.ONLY_ARRHYTHMIA,
-    include_paced: bool = False,
+    classification_policy: str = config.CLASSIFICATION_POLICY,
 ) -> np.ndarray:
     """Mapeia simbolos do MIT-BIH para rotulos binarios.
 
     Returns:
-        Vetor ``int64`` com 0 para nao-arritmia e 1 para arritmia.
+        Vetor ``int64`` com 0 para referencia negativa e 1 para alvo compartilhado.
     """
-    classification.metadata(only_arrhythmia, include_paced)
-    labels = [classification.mit_label(symbol, only_arrhythmia, include_paced) for symbol in symbols]
+    classification.metadata(classification_policy)
+    labels = [classification.mit_label(symbol, classification_policy) for symbol in symbols]
     if any(label is None for label in labels):
         raise classification.ClassificationError("Simbolos excluidos pela politica chegaram ao encoder.")
     return np.asarray(labels, dtype=np.int64)

@@ -1,0 +1,10 @@
+23:20:04 | INFO    | Extraindo Grad-CAM de 390 batimentos (lote=64)...
+23:20:05 | INFO    | Concluido: cam_interp (390, 234)
+Checkpoint : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/model.pt
+Dataset    : /home/william/Downloads/tcc(1)/xai_arrhythmia/data/processed/ludb_shared-extrasystoles-bbb-v1.npz
+  390 batimentos | janela de 234 amostras
+  predicao de referencia: acuracia 0.3923
+  conferencia com ludb_predictions.npz: max |diff score| = 2.12e-06, y_pred identico
+
+Grad-CAM  : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/gradcam_ludb/ludb_gradcam.npz
+Metadados : /home/william/Downloads/tcc(1)/xai_arrhythmia/outputs/models/cnn1d_mitbih_shared-extrasystoles-bbb-v1/gradcam_ludb/ludb_gradcam.json

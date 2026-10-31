@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 
 import classification
+import config
 
 OFFICIAL_CSV = "https://physionet.org/files/ludb/1.0.1/ludb.csv"
 
@@ -41,7 +42,7 @@ def read_clinical_csv(path: Path, records) -> tuple[dict, dict]:
     return rows, {
         "official_url": OFFICIAL_CSV,
         "version": "1.0.1",
-        "path": str(path),
+        "path": config.caminho_relativo(path),
         "sha256": classification.file_sha256(path),
         "empty_cell": "ausencia de diagnostico",
     }

@@ -12,8 +12,8 @@ Quarto script da cadeia, depois de ``train_cnn.py``, ``test_ludb.py`` e
 e cruza os dois num IoU por batimento: o mapa binarizado em
 ``cam_interp >= --limiar-cam`` contra a máscara clínica.
 Grava o IoU beat a beat e as médias (geral, por classe prevista, por classe
-verdadeira e por estrutura), com a cobertura média da máscara como referência
-ao acaso.
+verdadeira e por estrutura), com a cobertura média da máscara como estatística
+descritiva, sem interpretação de baseline aleatório.
 
 Exemplo:
     python src/fidelity_ludb.py
@@ -60,11 +60,10 @@ DEFAULT_CAM_THRESHOLD = 0.5
 # batimento**, no lugar da inspeção puramente visual do notebook
 # ``05_gradcam_demo.ipynb``.
 #
-# Referência ao acaso: qualquer mapa aleatório atinge, em média, um IoU próximo
-# da cobertura da máscara (fração da janela anotada). Esse valor —
-# ``dataset["metadata"]["cobertura_media_mascara_clinica"]``, também devolvido
-# aqui como ``cobertura_acaso`` — é o piso contra o qual o resultado do modelo
-# deve ser lido: um IoU médio que apenas o iguala não indica foco nenhum.
+# Compatibilidade: cobertura_acaso e acima_do_acaso sao campos legados/deprecated.
+# O primeiro e cobertura da mascara; o segundo e apenas IoU menos cobertura.
+# Nenhum foi validado como baseline aleatorio ou teste estatistico.
+# Os nomes e valores sao preservados para ler artefatos existentes.
 #
 # Ressalva herdada da discussão da Etapa 4: o mapa é normalizado pelo próprio
 # máximo de cada batimento, então mesmo uma ativação fraca e ruidosa (típica de
@@ -148,14 +147,14 @@ def resumo_iou(
         iou: vetor ``(n,)`` de :func:`iou_por_batimento`.
         y_pred: classe prevista por batimento (0/1); habilita ``iou_pred_*``.
         y_true: classe verdadeira por batimento (0/1); habilita ``iou_real_*``.
-        cobertura_acaso: fração média da janela coberta pela máscara — a
-            pontuação esperada de um mapa aleatório. Repassada como
-            ``cobertura_acaso`` e usada para ``acima_do_acaso``.
+        cobertura_acaso: argumento legado/deprecated: cobertura média da máscara,
+            sem baseline aleatório validado. Mantido por compatibilidade.
+            ``acima_do_acaso`` é somente a diferença aritmética IoU - cobertura.
 
     Returns:
         Dicionário com ``n``, ``n_avaliados`` (batimentos com IoU não-``nan``),
         ``iou_medio``, ``iou_mediana`` e, conforme os argumentos, a quebra por
-        classe prevista/verdadeira e a comparação com o acaso.
+        classe prevista/verdadeira e a cobertura descritiva (campos legados).
     """
     iou = np.asarray(iou, dtype=np.float64)
     avaliados = ~np.isnan(iou)
@@ -178,12 +177,28 @@ def resumo_iou(
         y_true = np.asarray(y_true).astype(int).ravel()
         resultado["iou_real_0"] = _media_segura(iou[y_true == 0])
         resultado["iou_real_1"] = _media_segura(iou[y_true == 1])
+        if y_pred is not None:
+            resultado["iou_correct"] = _media_segura(iou[y_pred == y_true])
+            resultado["iou_incorrect"] = _media_segura(iou[y_pred != y_true])
 
     if cobertura_acaso is not None:
         resultado["cobertura_acaso"] = float(cobertura_acaso)
         resultado["acima_do_acaso"] = resultado["iou_medio"] - float(cobertura_acaso)
 
     return resultado
+
+
+def resumo_iou_multirrotulo(iou: np.ndarray, grupos_json: np.ndarray) -> list[dict]:
+    """Agrega o mesmo IoU por familias/subtipos sobrepostos, sem mudar a metrica."""
+    decoded = [json.loads(str(value)) for value in np.asarray(grupos_json)]
+    nomes = sorted({name for values in decoded for name in values})
+    return [
+        {
+            "grupo": name,
+            **resumo_iou(np.asarray(iou)[[name in values for values in decoded]]),
+        }
+        for name in nomes
+    ]
 
 
 def fidelidade(
@@ -228,13 +243,13 @@ def fidelidade(
     }
 
     if mascaras_por_estrutura:
-        resultado["por_estrutura"] = {
-            nome: resumo_iou(
-                iou_por_batimento(cam_bin, mascara, vazio_vazio=np.nan),
-                y_pred,
-                y_true,
-            )
+        resultado["iou_por_estrutura_por_batimento"] = {
+            nome: iou_por_batimento(cam_bin, mascara, vazio_vazio=np.nan)
             for nome, mascara in mascaras_por_estrutura.items()
+        }
+        resultado["por_estrutura"] = {
+            nome: resumo_iou(iou, y_pred, y_true)
+            for nome, iou in resultado["iou_por_estrutura_por_batimento"].items()
         }
 
     return resultado
@@ -265,8 +280,8 @@ def formata_fidelidade(nome: str, resultado: dict) -> str:
         ]
     if "cobertura_acaso" in g:
         linhas += [
-            f"  esperado ao acaso       : {_fmt(g['cobertura_acaso'])}",
-            f"  acima do acaso          : {_fmt(g['acima_do_acaso'])}",
+            f"  cobertura clinica       : {_fmt(g['cobertura_acaso'])} (descritiva; campo legado)",
+            "  baseline aleatorio IoU  : nao validado; nao interpretar a diferenca legada",
         ]
 
     por_estrutura = resultado.get("por_estrutura")
@@ -342,26 +357,40 @@ def main() -> int:
         return 1
 
     gcam = np.load(args.gradcam, allow_pickle=False)
-    classification.require_npz_policy(gcam, args.only_arrhythmia, args.include_paced, str(args.gradcam))
+    classification.require_npz_policy(gcam, args.classification_policy, str(args.gradcam))
     cam_interp = gcam["cam_interp"]
     y_true = np.asarray(gcam["y_true"]).astype(int)
     y_pred = np.asarray(gcam["y_pred"]).astype(int)
     ritmos = np.asarray(gcam["ritmos"])
 
     dados = beat_io.load_beat_dataset(args.dataset)
-    classification.require_policy(dados.get("metadata", {}), args.only_arrhythmia, args.include_paced, str(args.dataset))
+    classification.require_policy(dados.get("metadata", {}), args.classification_policy, str(args.dataset))
     dataset_sha256 = classification.file_sha256(args.dataset)
     if "dataset_sha256" not in gcam or gcam["dataset_sha256"].item() != dataset_sha256:
         raise classification.ClassificationError("Grad-CAM e dataset LUDB nao tem a mesma origem (SHA-256).")
     if "checkpoint_sha256" not in gcam:
         raise classification.ClassificationError("Grad-CAM sem identificacao do checkpoint.")
+    if "split_manifest_sha256" not in gcam:
+        raise classification.ClassificationError("Grad-CAM sem identidade do split.")
+    if "checkpoint_role" not in gcam or gcam["checkpoint_role"].item() != "best":
+        raise classification.ClassificationError("Grad-CAM nao foi gerado com o melhor checkpoint.")
+    if "predictions_sha256" not in gcam:
+        raise classification.ClassificationError("Grad-CAM sem vinculo com as predicoes do teste LUDB.")
     provenance = {
-        **classification.artifact_identity(args.only_arrhythmia, args.include_paced),
+        **classification.artifact_identity(args.classification_policy),
         "dataset_sha256": dataset_sha256,
         "checkpoint_sha256": gcam["checkpoint_sha256"].item(),
+        "checkpoint_role": gcam["checkpoint_role"].item(),
+        "checkpoint_epoch": int(gcam["checkpoint_epoch"].item()),
+        "predictions_sha256": gcam["predictions_sha256"].item(),
         "gradcam_sha256": classification.file_sha256(args.gradcam),
+        "split_manifest_sha256": gcam["split_manifest_sha256"].item(),
     }
-    if not np.array_equal(y_true, dados["labels"]) or not np.array_equal(gcam["pacientes"], dados["pacientes"]):
+    if "beat_ids" not in gcam or "beat_ids" not in dados:
+        raise classification.ClassificationError("Grad-CAM/dataset sem identidade estavel de batimentos.")
+    if (not np.array_equal(y_true, dados["labels"])
+            or not np.array_equal(gcam["pacientes"], dados["pacientes"])
+            or not np.array_equal(gcam["beat_ids"], dados["beat_ids"])):
         raise classification.ClassificationError("Labels/pacientes do Grad-CAM nao estao alinhados ao dataset.")
     gcam.close()
     mascara_clinica = dados["mascara_clinica"]
@@ -402,6 +431,34 @@ def main() -> int:
         mascaras_por_estrutura=mascaras_por_estrutura,
         cobertura_acaso=cobertura_acaso,
     )
+    por_familia = resumo_iou_multirrotulo(
+        resultado["iou_por_batimento"], dados["target_families"]
+    )
+    por_subtipo = resumo_iou_multirrotulo(
+        resultado["iou_por_batimento"], dados["target_subtypes"]
+    )
+    decoded_families = [json.loads(str(value)) for value in dados["target_families"]]
+    extras_mask = np.asarray([
+        bool({"atrial_extrasystole", "ventricular_extrasystole"} & set(values))
+        for values in decoded_families
+    ])
+    bundle_mask = np.asarray([
+        bool({"lbbb", "rbbb"} & set(values)) for values in decoded_families
+    ])
+    coarse_iou = {
+        nome: resumo_iou(resultado["iou_por_batimento"][mask])
+        for nome, mask in (("extrasystoles", extras_mask), ("bundle_branch_blocks", bundle_mask))
+        if mask.any()
+    }
+    iou_estruturas = resultado["iou_por_estrutura_por_batimento"]
+    por_estrutura_grupos = {
+        estrutura: {
+            "por_familia": resumo_iou_multirrotulo(iou, dados["target_families"]),
+            "por_subtipo": resumo_iou_multirrotulo(iou, dados["target_subtypes"]),
+            "referencia_negativa": resumo_iou(iou[y_true == 0]),
+        }
+        for estrutura, iou in iou_estruturas.items()
+    }
     print(formata_fidelidade("LUDB", resultado))
     print("=" * 64)
 
@@ -412,14 +469,23 @@ def main() -> int:
         out_dir / FIDELITY_NAME,
         **provenance,
         iou_por_batimento=resultado["iou_por_batimento"].astype(np.float32),
+        iou_p=iou_estruturas["P (mascara_p)"].astype(np.float32),
+        iou_qrs=iou_estruturas["QRS (mascara_qrs)"].astype(np.float32),
+        iou_t=iou_estruturas["T (mascara_t)"].astype(np.float32),
         y_true=y_true,
         y_pred=y_pred,
         ritmos=ritmos,
+        beat_ids=dados["beat_ids"],
+        target_families=dados["target_families"],
+        target_subtypes=dados["target_subtypes"],
+        bundle_side=dados["bundle_side"],
+        bundle_completeness=dados["bundle_completeness"],
+        is_shared_subset=dados["is_shared_subset"],
         limiar_cam=np.array(args.limiar_cam),
     )
 
     info = {
-        **classification.metadata(args.only_arrhythmia, args.include_paced),
+        **classification.metadata(args.classification_policy),
         **provenance,
         "criado_em": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "etapa": "4 - fidelidade quantitativa do Grad-CAM (LUDB)",
@@ -434,14 +500,18 @@ def main() -> int:
         ),
         "geral": {k: v for k, v in resultado["geral"].items()},
         "por_estrutura": resultado.get("por_estrutura", {}),
+        "iou_por_familia": por_familia,
+        "iou_por_subtipo": por_subtipo,
+        "iou_referencia_negativa": resumo_iou(resultado["iou_por_batimento"][y_true == 0]),
+        "iou_coarse_groups": coarse_iou,
+        "iou_por_estrutura_e_grupo": por_estrutura_grupos,
         "observacao": (
             "iou_por_batimento em ludb_fidelity.npz esta alinhado por indice "
             "com ludb_gradcam.npz e com o dataset do LUDB."
         ),
     }
     (out_dir / FIDELITY_INFO_NAME).write_text(
-        json.dumps(info, ensure_ascii=False, indent=2, default=float),
-        encoding="utf-8",
+        classification.dumps_json(info), encoding="utf-8"
     )
 
     print(f"\nIoU por batimento : {out_dir / FIDELITY_NAME}")

@@ -116,8 +116,7 @@ def main() -> int:
         window_left=args.window_left,
         window_right=args.window_right,
         center=args.center,
-        only_arrhythmia=args.only_arrhythmia,
-        include_paced=args.include_paced,
+        classification_policy=args.classification_policy,
         clinical_csv=args.clinical_csv,
         normalize=not args.no_normalize,
         data_dir=None if args.stream else args.data_dir,
@@ -142,6 +141,17 @@ def main() -> int:
         regiao_t=dataset["regiao_t"],
         r_peaks=dataset["r_peaks"],
         tem_onda_p=dataset["tem_onda_p"],
+        beat_ids=dataset["beat_ids"],
+        selection_indices=dataset["selection_indices"],
+        selection_status=dataset["selection_status"],
+        target_families=dataset["target_families"],
+        target_subtypes=dataset["target_subtypes"],
+        bundle_side=dataset["bundle_side"],
+        bundle_completeness=dataset["bundle_completeness"],
+        positive_reasons=dataset["positive_reasons"],
+        other_conditions=dataset["other_conditions"],
+        ritmos=dataset["ritmos"],
+        is_shared_subset=dataset["is_shared_subset"],
     )
     size_mb = destino.stat().st_size / (1024 * 1024)
     print(f"\nDataset salvo em: {destino} ({size_mb:.1f} MB)")

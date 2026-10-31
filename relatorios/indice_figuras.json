@@ -1,0 +1,24 @@
+{
+  "descricao": "Figuras de apresentacao; nao sao novos resultados do pipeline.",
+  "figuras": [
+    "pipeline.svg",
+    "treino_sem.svg",
+    "treino_com.svg",
+    "matrizes_mit.svg",
+    "matrizes_ludb.svg",
+    "metricas_ludb.svg",
+    "mesmos_beats.svg",
+    "bloqueios.svg",
+    "falsos_negativos.svg",
+    "iou_global.svg",
+    "iou_comum.svg",
+    "iou_subtipos.svg",
+    "classificacao_iou.svg",
+    "distribuicao_iou_sem.svg",
+    "distribuicao_iou_com.svg",
+    "gradcam_sem.png",
+    "gradcam_com.png"
+  ],
+  "total": 17,
+  "gradcam_pngs_extraidos": 2
+}

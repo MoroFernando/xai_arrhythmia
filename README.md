@@ -1,562 +1,149 @@
-# Framework para Interpretação Quantitativa do Grad-CAM em Modelos de Classificação de Arritmias Cardíacas
+# Framework para interpretação quantitativa do Grad-CAM em ECG
 
-Projeto Transformador II — Bacharelado em Ciência da Computação, PUCPR (Turma A, Equipe 09).
+<!-- legenda-interna-projeto -->
+## Legenda de nomes e abreviações do projeto
 
-O objetivo é medir **quantitativamente**,e não por inspeção visual,se os mapas de
-calor do Grad-CAM 1D destacam estruturas eletrofisiológicas reais do ECG (ondas P, T e
-complexo QRS). A validação é *cross-dataset*: a CNN 1D é treinada no **MIT-BIH
-Arrhythmia Database** e a explicabilidade é avaliada no **LUDB**, que fornece o
-*ground truth* das delimitações clínicas.
+| Nome / abreviação | Significado nesta documentação |
+| --- | --- |
+| **SEM** / **SEM_BLOQUEIO** | **Sem bloqueio como alvo de classificação**: modelo treinado para reconhecer as extrasístoles compartilhadas entre MIT e LUDB. Bloqueios não são alvos positivos dessa política. O nome não garante ausência de bloqueios como comorbidade em todo registro. |
+| **COM** / **COM_BLOQUEIO** | **Com bloqueio como alvo de classificação**: modelo que inclui extrasístoles e bloqueios de ramo completos e incompletos entre seus alvos positivos. |
+| **COM somente completos** | Recorte de avaliação do mesmo modelo COM: exclui apenas positivos cuja única justificativa seja bloqueio incompleto. Mantém extrasístoles associadas a incompletos; não é um terceiro modelo. |
+| **BEST** / **LAST** | BEST é o checkpoint da melhor época pela Balanced Accuracy da validação MIT; LAST é o da última época. Checkpoint significa o arquivo com os pesos e metadados do modelo. |
+| **BA** | Balanced Accuracy, ou acurácia balanceada: média entre sensibilidade e especificidade. |
+| **Política / slug** | Regra de seleção dos alvos e seu identificador nos arquivos: shared-extrasystoles-v1 = SEM; shared-extrasystoles-bbb-v1 = COM. |
+| **beat / beat_id / n** | Beat é a janela de um batimento; beat_id é seu identificador; n é a quantidade de exemplos do recorte. As classes 0 e 1 são, respectivamente, referência negativa e alvo positivo da política. |
 
-## Estrutura do repositório
+Esta legenda esclarece a nomenclatura interna atual. Em documentos marcados **HISTÓRICO**, não substitui nem atualiza as regras antigas descritas no corpo. As siglas médicas mantêm a nomenclatura dos dados originais.
+<!-- /legenda-interna-projeto -->
 
+
+STATUS: ATUAL — revisão editorial de 30/10/2026. Comece pelo [relatório geral](RELATORIO_GERAL_PROJETO.md), [relatório visual](RELATORIO_VISUAL_RESULTADOS.md), [guia dos notebooks oficiais](GUIA_NOTEBOOKS_RESULTADOS.md) e [correções finais](RELATORIO_CORRECOES_FINAIS.md).
+
+O projeto treina uma CNN 1D binária em beats do MIT-BIH, testa a generalização externa em beats do LUDB e compara o Grad-CAM com as delimitações P/QRS/T por IoU. O LUDB diagnostica principalmente o registro; o diagnóstico selecionado é propagado aos beats aceitos, limitação metodológica reconhecida pelo grupo.
+
+## Políticas de classificação
+
+Treino e teste usam famílias compartilhadas e uma política explícita em todas as etapas:
+
+| Slug | Nome | MIT-BIH | LUDB positivo |
+| --- | --- | --- | --- |
+| `shared-extrasystoles-v1` | `SEM_BLOQUEIO` | `N=0`; `A/a/V=1` | extrasístoles atriais/ventriculares |
+| `shared-extrasystoles-bbb-v1` | `COM_BLOQUEIO` | `N=0`; `A/a/V/L/R=1` | anteriores + LBBB/RBBB completos/incompletos |
+
+Os demais símbolos e diagnósticos ficam fora da tarefa; exclusão não significa normalidade. Isquemia, por exemplo, não é convertida em 0. Pacing é excluído nas duas políticas. Consulte [as políticas atuais](RELATORIO_GERAL_PROJETO.md#classificacao-detalhada) para o contrato operacional e o mapeamento completo.
+
+## Estrutura
+
+```text
+src/
+  classification.py       políticas, valores controlados e compatibilidade
+  config.py               caminhos e parâmetros comuns
+  beat_io.py              persistência dos datasets NPZ
+  datasets/mitbih.py      segmentação e seleção MIT-BIH
+  datasets/ludb.py        segmentação, P/QRS/T e seleção LUDB
+  datasets/ludb_clinical.py  parser do CSV oficial LUDB
+  preprocess_mitbih.py
+  preprocess_ludb.py
+  train_cnn.py            split por sujeito e treino
+  test_ludb.py            inferência e métricas
+  model_gradcam.py        CNN 1D e Grad-CAM
+  extract_gradcam.py
+  fidelity_ludb.py        IoU
+notebooks/                análise dos artefatos já gerados
+data/                     bases e datasets processados
+outputs/                  manifests, checkpoints e resultados
 ```
-framework-xai-arrhythmia/
-├── requirements.txt              # Dependências (pip)
-├── data/
-│   ├── raw/                     # Registros WFDB baixados (não versionado)
-│   ├── interim/                 # Artefatos intermediários (não versionado)
-│   └── processed/               # Datasets .npz prontos (não versionado)
-├── notebooks/
-│   ├── 01_exploracao_mitbih.ipynb
-│   ├── 02_exploracao_ludb.ipynb
-│   ├── 03_analise_treino.ipynb  # Análises pós-treino (MIT-BIH)
-│   ├── 04_teste_ludb.ipynb      # Uso do modelo treinado no LUDB
-│   ├── 05_gradcam_demo.ipynb    # Grad-CAM pré-extraído + anotações clínicas
-│   └── 06_fidelidade_iou.ipynb  # IoU do Grad-CAM x máscara clínica (quantitativo)
-├── outputs/figures/             # Figuras geradas para o artigo
-├── outputs/models/              # Checkpoints treinados (versionados)
-└── src/                         # Todo o código do projeto
-    ├── config.py                # Constantes: janela, símbolos, caminhos
-    ├── beat_io.py               # Persistência .npz + metadados
-    ├── model_gradcam.py         # CNN 1D + Grad-CAM 1D (arquitetura, treino, extração)
-    ├── datasets/
-    │   ├── signals.py           # Derivação, reamostragem, segmentação, máscaras
-    │   ├── mitbih.py            # Pipeline completo do MIT-BIH (treino)
-    │   └── ludb.py              # Pipeline completo do LUDB (teste)
-    ├── preprocess_mitbih.py     # CLI do pré-processamento do MIT-BIH
-    ├── preprocess_ludb.py       # CLI do pré-processamento do LUDB
-    ├── train_cnn.py             # CLI do treino/validação no MIT-BIH
-    ├── test_ludb.py             # CLI do teste no LUDB + métricas de classificação
-    ├── extract_gradcam.py       # CLI da extração do Grad-CAM no LUDB
-    └── fidelity_ludb.py         # CLI do IoU de fidelidade + métrica de fidelidade
-```
-
-> Todo o código vive em `src/`: não há pacote instalável. Os scripts põem o
-> próprio diretório no `sys.path`, então `python src/train_cnn.py` funciona
-> a partir de qualquer pasta, e os notebooks fazem o mesmo com uma célula de
-> bootstrap (`sys.path.insert(0, str(Path.cwd().parent / "src"))`).
->
-> Dois módulos são compartilhados por vários scripts e por isso ficam em
-> arquivos próprios: `config.py` (caminhos e constantes) e `beat_io.py`
-> (leitura/escrita dos `.npz`). Já as métricas de classificação e a métrica de
-> fidelidade moram dentro do script que as consome — `test_ludb.py` e
-> `fidelity_ludb.py` — e os notebooks 03/04/06 as importam de lá
-> (`import test_ludb as metrics`).
 
 ## Instalação
 
-**Versão do Python: mínimo 3.9, recomendado 3.11.** O código-fonte em `src/`
-usa `from __future__ import annotations` em todos os módulos e não depende de
-sintaxe ou biblioteca padrão além do 3.9; o piso real vem das dependências
-(`numpy>=1.26`, `pandas>=2.1`, `scikit-learn>=1.4` exigem 3.9+). O projeto foi
-desenvolvido e testado no 3.11, que também é o teto prático (`torch>=2.2` e
-`numpy 1.26` não têm build para 3.13+).
-
-Crie o ambiente conda com a versão do Python:
+O ambiente registrado usou Python 3.11.17 e PyTorch 2.11.0+cu128. PyTorch/CUDA são instalados separadamente dos requisitos gerais. Consulte [o ambiente e os limites de reprodução](RELATORIO_GERAL_PROJETO.md#ambiente-reprodutibilidade); não há lockfile completo das demais bibliotecas.
 
 ```bash
-conda create -n xai-arrhythmia python=3.11
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install -r requirements-pytorch-cu128.txt
+python -m pip install -r requirements.txt
 ```
+
+## Cadeia de execução
+
+Execute futuramente cada política de ponta a ponta. O exemplo abaixo usa o modo sem bloqueio:
 
 ```bash
-conda activate xai-arrhythmia
+python src/preprocess_mitbih.py --download --classification-policy shared-extrasystoles-v1
+python src/train_cnn.py --classification-policy shared-extrasystoles-v1
+python src/preprocess_ludb.py --download --classification-policy shared-extrasystoles-v1
+python src/test_ludb.py --classification-policy shared-extrasystoles-v1
+python src/extract_gradcam.py --classification-policy shared-extrasystoles-v1
+python src/fidelity_ludb.py --classification-policy shared-extrasystoles-v1
 ```
 
-Instale as dependências via pip (a partir da raiz do repositório):
+Repita com `shared-extrasystoles-bbb-v1`. O CSV oficial LUDB 1.0.1 deve estar em `data/raw/ludb/ludb.csv` ou ser informado por `--clinical-csv`.
+
+Depois das duas cadeias, valide os artefatos e compare os modelos nos mesmos beats:
 
 ```bash
-pip install -r requirements.txt
+python src/compare_policies.py
 ```
 
-Não há pacote a instalar: o código fica todo em `src/`, e cada script
-resolve os próprios imports. Rode-os a partir da raiz do repositório
-(`python src/train_cnn.py`).
+Os caminhos padrão incluem o slug:
 
-### Alternativa sem conda
-
-```bash
-python -m venv .venv && .venv\Scripts\activate && pip install -r requirements.txt
+```text
+data/processed/mitbih_<slug>.npz
+data/processed/ludb_<slug>.npz
+outputs/models/cnn1d_mitbih_<slug>/
+  model.pt          melhor época (val. acurácia balanceada), usado no LUDB/Grad-CAM/IoU
+  model_last.pt     última época, apenas rastreabilidade
+outputs/comparacao_politicas/   validação dos artefatos e SEM x COM nos mesmos beats
 ```
 
-## Pré-processamento do MIT-BIH
+Cada etapa rejeita política incompatível e evita sobrescrever uma saída existente. SHA-256 vincula resultados a datasets, checkpoints e Grad-CAM. Os resultados históricos em `outputs/models/cnn1d_mitbih/` pertencem à classificação anterior e não devem ser comparados como se fossem uma das políticas novas.
 
-Baixa os registros para `data/raw/mitdb` e gera o dataset processado:
+## Pré-processamento e identidade dos beats
 
-```bash
-python src/preprocess_mitbih.py --download
+As duas bases usam Lead II, janela de 234 amostras centrada no pico R e normalização Z por beat. O LUDB é reamostrado de 500 Hz para 360 Hz e mantém máscaras e regiões P/QRS/T.
+
+Todo beat selecionado recebe um `beat_id` estável baseado em base, registro e pico R, além do índice de seleção no registro. O MIT-BIH preserva `pacientes` como id do registro e `subject_ids` como id do sujeito; os registros 201 e 202 usam o mesmo `subject_id`. O LUDB preserva famílias, subtipos, lado/completude dos bloqueios, motivos de inclusão, comorbidades e ritmos.
+
+## Split e treinamento
+
+O treino usa `StratifiedGroupKFold`, por padrão com cinco folds, fold 0 e seed 0. O agrupamento usa `subject_ids`, impedindo que 201 e 202 sejam separados. Um manifesto JSON em `outputs/splits/` registra a atribuição por sujeito e pode ser reutilizado pelos dois modos quando válido. O checkpoint guarda política, versão, hash do dataset e identidade do split.
+
+A arquitetura `CNN1D_Arritmia` e o cálculo do Grad-CAM permanecem iguais. Cada política exige preprocessing e treinamento independentes.
+
+O treino roda o número planejado de épocas (20 por padrão). A cada época a validação MIT-BIH é avaliada no limiar fixo 0.5; quando a acurácia balanceada supera estritamente a melhor anterior, aqueles pesos passam a ser o melhor modelo. `model.pt` guarda o melhor modelo e `model_last.pt` a última época. `metrics.json` registra `best_epoch`, `best_validation_balanced_accuracy`, `last_epoch`, `last_validation_balanced_accuracy`, métricas completas de treino/validação (inclusive por símbolo) e o SHA-256 dos dois checkpoints. Teste LUDB, Grad-CAM e IoU recusam checkpoint que não seja o melhor. O LUDB não participa da seleção. Os kernels cuDNN são determinísticos.
+
+## Avaliação
+
+O teste LUDB produz Accuracy, Balanced Accuracy, Precision, Recall/Sensitivity, Specificity, F1, ROC-AUC e matriz de confusão. Também produz, para famílias e subtipos positivos, sensibilidade, taxa de falso negativo e score médio. Especificidade, precisão, F1 e AUC não são atribuídas a um recorte que contenha somente positivos.
+
+No modo com bloqueio, a análise pode separar:
+
+- extrasístoles atriais e ventriculares;
+- LBBB e RBBB;
+- LBBB/RBBB completos e incompletos;
+- o subconjunto de extrasístoles compartilhado com o modo sem bloqueio.
+
+O teste também grava baselines triviais (sempre 0, sempre 1, classe majoritária), a atribuição dos falsos negativos a extrasístoles e bloqueios completos/incompletos (multirrótulo e partição exclusiva) e, no modo com bloqueio, a avaliação "somente completos": as mesmas predições do modelo COM, excluindo apenas positivos cuja única justificativa é bloqueio incompleto. Ela não é um terceiro modelo.
+
+O subconjunto comum contém os beats da tarefa SEM: referências negativas e registros com extrasístole atrial/ventricular, inclusive quando também têm LBBB/RBBB. `compare_policies.py` usa a interseção exata de `beat_id` e avalia os dois modelos sobre os mesmos beats e os mesmos `y_true`.
+
+Grad-CAM e IoU preservam os mesmos metadados. O Grad-CAM confere que usa o mesmo checkpoint e reproduz as mesmas predições do teste LUDB. O IoU pode ser resumido por família e subtipo sem alterar sua definição: interseção sobre união entre o mapa binarizado e as máscaras clínicas P/QRS/T.
+
+## Notebooks e apresentação oficial
+
+Os **12 notebooks oficiais** estão em `outputs/notebooks_executados/<slug>/`. A pasta `notebooks/` preserva outputs históricos e está marcada como tal. Os notebooks 03/04 oficiais contêm código de inferência: para consulta, leia seus outputs já salvos. O notebook 06 lê IoUs persistidos e mostra as contagens das duas classes por ritmo. Veja o [guia completo](GUIA_NOTEBOOKS_RESULTADOS.md).
+
+A cobertura clínica ≈ 0,576 não foi validada como baseline aleatório de IoU. Campos antigos `cobertura_acaso`/`acima_do_acaso` são deprecated e preservados nos artefatos por compatibilidade, sem interpretação estatística. Consulte [o contrato](RELATORIO_GERAL_PROJETO.md#campos-legados-iou).
+
+O treinamento aplica seed 0 a Python/NumPy/PyTorch e configura cuDNN; não há evidência no pacote para comprovar igualdade bit a bit entre execuções independentes.
+
+## Validação sem regenerar resultados
+
+```text
+python src/compare_policies.py --validate-only
 ```
 
-Para ler direto do PhysioNet, sem cache local (mais lento, útil no Colab):
+Este modo apenas lê/agrega. A revisão editorial foi validada com a ferramenta independente em `relatorios/validar_resultados.cjs`; os artefatos numéricos originais permaneceram idênticos.
 
-```bash
-python src/preprocess_mitbih.py --stream
-```
-
-Saída padrão: `data/processed/mitbih_beats.npz`.
-
-### O que o pipeline faz
-
-1. **Leitura via WFDB** — sinal (`.dat`/`.hea`) e anotações (`.atr`) de cada registro.
-2. **Seleção da derivação II** — o canal é escolhido **pelo nome** (`MLII`), nunca pelo
-   índice: nos registros 102 e 104 o canal 0 é V5, e usar `p_signal[:, 0]` misturaria
-   derivações diferentes no mesmo dataset.
-3. **Segmentação beat-to-beat** — janela assimétrica de 234 amostras (~650 ms @360 Hz)
-   centrada no pico R: 90 amostras antes (~250 ms, cobre a onda P) e 144 depois
-   (~400 ms, cobre a onda T). Janelas que extrapolam os limites do sinal são
-   descartadas.
-4. **Descarte de anotações non-beat** — `! " + [ ] x | ~` marcam mudança de ritmo,
-   ruído e artefatos, não batimentos.
-5. **Z-normalization por batimento** — cada janela é normalizada isoladamente
-   (média 0, desvio 1). Batimentos constantes viram vetor de zeros, sem divisão por zero.
-   Normalizar por batimento é o que torna possível aplicar no LUDB um modelo treinado
-   no MIT-BIH, já que remove diferenças de ganho e offset entre bases.
-6. **Rotulagem binária** — `0` = não-arritmia, `1` = arritmia.
-
-### Decisões que divergem do notebook exploratório inicial
-
-| Decisão | Padrão adotado | Como reverter |
-| --- | --- | --- |
-| Registros com marcapasso (102, 104, 107, 217) | Excluídos — prática usual na literatura de classificação de batimentos; 102 e 104 também não têm MLII | `--include-paced` |
-| Classe 0 | Apenas `N` | `--normal-symbols AAMI` agrupa `N, L, R, e, j` |
-| Seleção de canal | Por nome (`MLII`) | `--lead V5`, etc. |
-
-O registro `108` (ausente da lista do notebook) está incluído.
-
-### Formato do arquivo de saída
-
-`.npz` compactado, todos os arrays alinhados por índice:
-
-| Chave | Shape | Descrição |
-| --- | --- | --- |
-| `series` | `(n, 234)` `float32` | batimento segmentado e normalizado |
-| `labels` | `(n,)` `int64` | 0 = não-arritmia, 1 = arritmia |
-| `simbolos` | `(n,)` `<U2` | símbolo original do MIT-BIH (`N`, `V`, `A`, …) |
-| `pacientes` | `(n,)` `<U4` | id do registro de origem |
-| `r_peaks` | `(n,)` `int64` | posição do pico R no sinal original |
-| `metadata_json` | escalar | JSON com todos os parâmetros usados |
-
-Leitura:
-
-```python
-import sys
-from pathlib import Path
-sys.path.insert(0, "src")
-
-from beat_io import load_beat_dataset
-
-dados = load_beat_dataset("data/processed/mitbih_beats.npz")
-X, y = dados["series"], dados["labels"]
-print(dados["metadata"]["distribuicao_labels"])
-```
-
-Manter `pacientes` é o que permite a divisão *inter-patient* no treino (Etapa 3):
-batimentos de um mesmo paciente nunca devem aparecer em treino e validação ao mesmo
-tempo. `simbolos` preserva o tipo original da arritmia para a análise de falhas por
-classe na Etapa 4.
-
-## Pré-processamento do LUDB
-
-```bash
-python src/preprocess_ludb.py --download
-```
-
-Saída padrão: `data/processed/ludb_beats.npz`.
-
-O download baixa apenas as anotações da derivação usada — o LUDB tem um arquivo de
-anotação por derivação (12 por registro), e pegar as 12 traria ~2200 arquivos inúteis.
-Os arquivos caem em `data/raw/ludb/data/` (o `RECORDS` do PhysioNet já traz o prefixo
-`data/`); o pipeline resolve esse subdiretório sozinho.
-
-### O que o pipeline faz
-
-1. **Leitura via WFDB** — sinal das 12 derivações e a anotação de delineação, que no
-   LUDB tem a derivação como extensão do arquivo (`1.ii`).
-2. **Seleção da derivação II** — mesma função do MIT-BIH; os nomes de canal do LUDB
-   são minúsculos (`ii`) e a comparação é case-insensitive.
-3. **Extração das ondas** — a anotação segue o padrão `( → pico → )`, com `p` (onda P),
-   `N` (complexo QRS) e `t` (onda T). Cada onda vira a tripla `(onset, pico, offset)`.
-4. **Reamostragem 500 Hz → 360 Hz** — `resample_poly` (18/25) no sinal, e os índices
-   das anotações reescalados pela mesma razão. Sem isso os batimentos do LUDB teriam
-   duração diferente dos do MIT-BIH e o modelo veria morfologias distorcidas.
-5. **Segmentação beat-to-beat** — mesma janela de 234 amostras, centrada no **pico R**
-   (o pico anotado do complexo QRS), igual ao MIT-BIH.
-6. **Filtragem por completude** — o batimento só é mantido se o próprio QRS e a onda T
-   que o segue estiverem **integralmente** dentro da janela. A onda P precedente é
-   exigida apenas em registros que têm ondas P delimitadas (ver abaixo).
-7. **Z-normalization por batimento** — idêntica à do MIT-BIH.
-8. **Rótulo propagado** — o LUDB diagnostica o **registro**, não o batimento: o campo
-   `Rhythm:` do header é replicado em todos os batimentos daquele registro.
-
-### Por que a onda P é condicional
-
-Os 18 registros de **fibrilação e flutter atrial** do LUDB têm **zero ondas P
-anotadas**. Isso não é lacuna de anotação: a ausência de onda P *é a definição
-eletrofisiológica* da fibrilação atrial — o átrio não despolariza de forma organizada e
-a onda P é substituída por ondas fibrilatórias.
-
-Como esses são exatamente os registros da classe arritmia, exigir P de todo batimento
-zerava a classe 1 do conjunto de teste (`classe 1: 0 batimentos`), tornando impossível
-medir a fidelidade do Grad-CAM justamente na classe que o artigo investiga. O critério
-condicional recupera ~162 batimentos arrítmicos e mantém o rigor das três estruturas
-para os ritmos que de fato produzem onda P.
-
-Cada batimento carrega a flag `tem_onda_p`, e `regiao_p` recebe o sentinela `(-1, -1)`
-quando a onda não existe — assim a Etapa 4 pode excluir a P do denominador da métrica
-nesses casos, em vez de penalizar o Grad-CAM por não destacar uma estrutura ausente.
-
-### Rótulo binário
-
-O ritmo do header (`#Rhythm: Sinus bradycardia.`) é normalizado (minúsculas, sem
-pontuação final) e mapeado assim:
-
-| Classe | Ritmos |
-| --- | --- |
-| `0` (não-arritmia) | `sinus rhythm` |
-| `1` (arritmia) | qualquer outro |
-
-É o análogo direto do critério do MIT-BIH, onde apenas o símbolo `N` recebe classe 0.
-O resumo impresso lista a distribuição por ritmo com a classe atribuída, o que permite
-conferir se algum ritmo inesperado caiu na classe 1.
-
-`--normal-rhythms sinus` troca para o agrupamento alternativo, que coloca todos os
-ritmos de origem sinusal (`sinus bradycardia`, `sinus tachycardia`, `sinus arrhythmia`,
-`irregular sinus rhythm`) na classe 0 e restringe a classe 1 aos ritmos não-sinusais.
-Sob esse agrupamento a classe 1 cai de 363 para 162 batimentos. A diferença está nos
-201 batimentos de ritmo sinusal não-normal, cuja distinção depende do intervalo RR —
-informação que a janela de um único batimento não carrega. Vale usá-lo como **análise
-de sensibilidade** no artigo.
-
-### Formato do arquivo de saída
-
-Além de `series`, `labels`, `simbolos` (ritmo propagado), `pacientes` e `r_peaks`:
-
-| Chave | Shape | Descrição |
-| --- | --- | --- |
-| `mascara_clinica` | `(n, 234)` `int8` | união P+QRS+T — o Ω_clin da métrica de fidelidade |
-| `mascara_p` / `mascara_qrs` / `mascara_t` | `(n, 234)` `int8` | máscara por estrutura, para análise separada |
-| `regiao_p` / `regiao_qrs` / `regiao_t` | `(n, 2)` `int64` | `(onset, offset)` das ondas **do próprio batimento**, relativos à janela; `(-1, -1)` quando a onda não existe |
-| `tem_onda_p` | `(n,)` `int8` | 1 se o batimento tem onda P delimitada, 0 em FA/flutter |
-
-As máscaras incluem toda onda anotada que cai na janela (inclusive de batimentos
-vizinhos), porque descrevem tudo que os especialistas delimitaram naquele trecho. Já as
-`regiao_*` guardam só as três ondas do batimento em questão — é o que permite, na
-Etapa 4, medir a ativação do Grad-CAM por estrutura individual.
-
-A cobertura média da `mascara_clinica` impressa no resumo é a **pontuação esperada ao
-acaso** da métrica de fidelidade: qualquer mapa de Grad-CAM aleatório atinge esse valor,
-então ele é o piso contra o qual o resultado do modelo deve ser comparado.
-
-## Treino da CNN 1D (Etapa 3)
-
-```bash
-python src/train_cnn.py
-```
-
-Saída padrão: `outputs/models/cnn1d_mitbih/` com `model.pt`, `metrics.json` e
-`history.csv`.
-
-Treino e teste são **scripts separados**, e a separação é metodológica, não
-apenas organizacional: `train_cnn.py` só enxerga o MIT-BIH, e o teste no LUDB
-(`test_ludb.py`, seção seguinte) só consome um modelo já salvo. Nenhuma decisão
-de treino pode ser tomada olhando o conjunto de teste.
-
-### Divisão inter-paciente
-
-O modelo é treinado **exclusivamente no MIT-BIH**. A base inteira é usada como
-conjunto de desenvolvimento e dividida **por registro**, nunca por batimento:
-batimentos do mesmo paciente compartilham morfologia, ruído de eletrodo e
-características do indivíduo — se caíssem em treino e validação ao mesmo tempo,
-a rede poderia acertar por reconhecer o paciente, e não a arritmia.
-
-A divisão é feita com `StratifiedGroupKFold` (`--n-splits`, padrão 5),
-agrupando por `pacientes` e estratificando por `labels`; o fold 0 (`--fold`)
-é usado como partição treino/validação. Na execução de referência isso dá 36
-registros no treino (81 287 batimentos, 25,8 % de arritmia) e 8 na validação
-(19 408 batimentos, 26,7 %). O código **verifica e falha** se algum registro
-aparecer nos dois conjuntos.
-
-O conjunto de **teste** do projeto é o LUDB, e ele não participa de nenhuma
-decisão de treino.
-
-### Arquitetura
-
-`CNN1D_Arritmia` (em `src/model_gradcam.py`) — **121 633 parâmetros**:
-
-| Camada | Saída |
-| --- | --- |
-| `Conv1d(1→16, k=7, pad=3)` + ReLU + `MaxPool1d(2)` | `(16, 117)` |
-| `Conv1d(16→32, k=5, pad=2)` + ReLU  ← *camada alvo do Grad-CAM* | `(32, 117)` |
-| `MaxPool1d(2)` + `flatten` | `1856` |
-| `Linear(1856→64)` + ReLU | `64` |
-| `Linear(64→1)` + **sigmoide** | `1` (prob. de arritmia) |
-
-O hook de Grad-CAM é registrado dentro do `forward`, sobre a ativação de
-`conv2` (comprimento nativo de 117 passos, ~2 amostras / ~5,5 ms cada); o mapa
-é depois reamostrado para as 234 amostras da janela.
-
-### Desbalanceamento
-
-**Não há reponderação de classe** — a perda é `binary_cross_entropy` sobre a
-sigmoide, sem `pos_weight`. Com a classe arritmia em ~26 % do MIT-BIH, isso
-empurra a rede a favorecer a classe majoritária, e é parte da explicação para
-a sensibilidade baixa no teste cross-dataset (ver seção do LUDB).
-
-### Seleção de época e limiar de decisão
-
-**Não há seleção de época nem early stopping**: o treino roda um número fixo de
-épocas (`--epochs`, padrão 20) e as métricas finais usam os pesos da **última**
-época.
-
-O **limiar de decisão não é ajustável**: é sempre `0,5`
-(`model_gradcam.DEFAULT_THRESHOLD`), o mesmo valor em treino, validação e teste
-no LUDB. O projeto não faz varredura de limiar por conjunto — isso abriria uma
-forma indireta de encaixar o modelo aos dados de teste.
-
-### Resultados no MIT-BIH (execução de referência)
-
-Checkpoint em `outputs/models/cnn1d_mitbih/`: `StratifiedGroupKFold(5)` fold 0,
-semente 0, `--epochs 20`, limiar fixo 0,5.
-
-| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade |
-| --- | --- | --- | --- | --- |
-| Treino | 0,9974 | — | — | — |
-| Validação | 0,7610 | 0,7419 | 0,7009 | 0,7830 |
-
-Sem seleção de época, os números são os da época 20. A acurácia balanceada na
-validação **atinge o pico na época 2 (0,897) e cai depois** — na época 20 já
-está em 0,742, enquanto a acurácia de treino chega a 0,997. É overfitting claro:
-a rede não tem regularização (sem BatchNorm, sem dropout, sem weight decay) e o
-treino não para no melhor ponto. O notebook `03_analise_treino.ipynb` plota a
-curva completa.
-
-### Formato do checkpoint
-
-`model.pt` é autocontido — pesos, `input_length`, limiar e o bloco `info`
-(arquitetura, `train_config`, divisão, `val_idx` e métricas):
-
-```python
-import sys
-sys.path.insert(0, "src")
-
-import config
-from model_gradcam import load_checkpoint
-
-modelo, ckpt = load_checkpoint("outputs/models/cnn1d_mitbih/model.pt")
-print(ckpt["threshold"], ckpt["info"]["metrics"]["validacao"])
-```
-
-`metrics.json` traz o mesmo conteúdo em texto (sem o `val_idx`, que fica só no
-`.pt` — é o que os notebooks recarregam) e `history.csv` a curva por época.
-
-## Teste no LUDB (cross-dataset)
-
-```bash
-python src/test_ludb.py
-```
-
-O script **não treina nada**: carrega o checkpoint, congela os pesos e mede o
-desempenho no LUDB. O limiar não é reajustado aqui — é o mesmo 0,5 fixo do
-treino e da validação.
-
-Saída em `outputs/models/<run>/teste_ludb/`:
-
-| Arquivo | Conteúdo |
-| --- | --- |
-| `ludb_metrics.json` | métricas, quebra por ritmo e a proveniência do modelo |
-| `ludb_predictions.npz` | `y_true`, `y_score`, `y_pred`, `pacientes`, `ritmos` batimento a batimento |
-
-O `.npz` de predições é o que a Etapa 4 consome: alinhado por índice com as
-máscaras clínicas do LUDB, permite cruzar o Grad-CAM com as anotações de P, QRS
-e T beat a beat, inclusive nos batimentos em que o modelo erra.
-
-### Resultado
-
-| Conjunto | Acurácia | Acur. balanceada | Sensibilidade | Especificidade | AUC-ROC |
-| --- | --- | --- | --- | --- | --- |
-| LUDB @ 0,50 | 0,6539 | 0,5393 | 0,2590 | 0,8197 | 0,5715 |
-
-`tp = 94 · fn = 269 · tn = 709 · fp = 156` (1228 batimentos, 865 classe 0 /
-363 classe 1).
-
-Quebra por ritmo:
-
-| Ritmo | n | Classe | Acerto | Score médio |
-| --- | --- | --- | --- | --- |
-| sinus rhythm | 865 | 0 | 0,820 | 0,185 |
-| atrial fibrillation | 126 | 1 | 0,397 | 0,422 |
-| sinus bradycardia | 75 | 1 | 0,093 | 0,101 |
-| sinus arrhythmia | 64 | 1 | 0,234 | 0,240 |
-| sinus tachycardia | 49 | 1 | 0,163 | 0,170 |
-| atrial flutter, typical | 36 | 1 | 0,250 | 0,255 |
-| irregular sinus rhythm | 13 | 1 | 0,385 | 0,394 |
-
-A AUC-ROC de **0,57** mostra que o modelo mal separa as classes no LUDB: acerta
-os ritmos sinusais (especificidade 0,82, pelo viés para a classe majoritária) e
-erra a maioria das arritmias — nenhum ritmo da classe 1 passa de 0,40 de
-acerto, incluindo fibrilação e flutter atrial, que alteram a morfologia do
-batimento. Duas causas se somam:
-
-- **overfitting no treino** — sem regularização e sem seleção de época, os
-  pesos da época 20 já generalizam mal (ver seção do MIT-BIH);
-- **cenário cross-dataset adverso** — as bases diferem em população,
-  equipamento e, sobretudo, em critério de rótulo (o MIT-BIH rotula o
-  *batimento*, o LUDB rotula o *ritmo do registro inteiro*); ritmos como
-  bradicardia e taquicardia sinusais são anomalias de *frequência*, e a janela
-  de um único batimento não carrega o intervalo RR.
-
-Para o objeto do artigo isso é matéria-prima, não defeito: a Etapa 4 investiga
-se o Grad-CAM aponta estruturas eletrofisiológicas reais **mesmo quando a
-predição erra**.
-
-## Extração do Grad-CAM (Etapa 4)
-
-```bash
-python src/extract_gradcam.py
-```
-
-Terceiro script da cadeia, depois de `train_cnn.py` e `test_ludb.py`, mas
-**autocontido**: não depende dos outros dois terem rodado, só do checkpoint e
-do dataset do LUDB. A predição usada para os campos `y_pred`/`y_score` é
-recomputada aqui (mesmo checkpoint, mesmo limiar fixo, sem aleatoriedade em
-`eval()`), então sai idêntica à de `test_ludb.py` — os dois arquivos ficam
-alinhados por índice sem precisar um do outro.
-
-A lógica do Grad-CAM mora em [`src/model_gradcam.py`](src/model_gradcam.py)
-(`grad_cam_1d`), reaproveitada pelo script e pelos notebooks em vez de
-reimplementada em cada um.
-
-### Grad-CAM em lote
-
-`model_gradcam.grad_cam_1d` extrai o mapa de ativação da última camada
-convolucional (`conv2`) via hook interno, retropropaga a partir de `prob.sum()`,
-faz a média temporal do gradiente por canal, aplica `ReLU(Σ w·ativação)` e já
-reamostra o mapa (`F.interpolate` linear) para as 234 amostras da janela. O
-`extract_gradcam.py` percorre o LUDB em lotes (`--batch-size`, padrão 64).
-
-### Formato da saída
-
-Em `outputs/models/<run>/gradcam_ludb/`:
-
-| Arquivo | Conteúdo |
-| --- | --- |
-| `ludb_gradcam.npz` | `cam_interp` `(n, 234)`, `y_true`, `y_pred`, `y_score`, `pacientes`, `ritmos`, `threshold` |
-| `ludb_gradcam.json` | checkpoint, dataset, camada alvo, dimensões, método de interpolação e a acurácia de referência |
-
-`cam_interp` já vem reamostrado para o tamanho da janela do batimento (234
-amostras) e normalizado em `[0, 1]` pelo máximo de cada batimento. O arquivo é
-autocontido: alinhado por índice com o dataset do LUDB e com
-`ludb_predictions.npz`, mas não depende deste para ser lido.
-
-Essa matriz `cam_interp` é a matéria-prima da parte 2: cruzá-la com
-`ludb["mascara_clinica"]` — a máscara booleana `(n, 234)` que já une P, QRS e T
-amostra a amostra — reduz a comparação visual do notebook `05_gradcam_demo.ipynb`
-a um número por batimento.
-
-## Fidelidade quantitativa do Grad-CAM (Etapa 4, parte 2)
-
-```bash
-python src/fidelity_ludb.py
-```
-
-Quarto script da cadeia, depois de `train_cnn.py`, `test_ludb.py` e
-`extract_gradcam.py`. Não roda o modelo: consome `ludb_gradcam.npz` (os mapas
-`cam_interp` já extraídos e a predição por batimento) e o dataset processado do
-LUDB (as máscaras `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`),
-ambos alinhados por índice.
-
-A lógica mora no próprio [`src/fidelity_ludb.py`](src/fidelity_ludb.py)
-— o notebook `06` a importa de lá (`import fidelity_ludb as fidelity`), mesmo
-padrão das métricas de classificação em `src/test_ludb.py`.
-
-### A métrica
-
-Para cada batimento, o mapa é binarizado em `cam_interp >= --limiar-cam`
-(padrão `0.5`; o mapa já vem normalizado em `[0, 1]` por `model_gradcam.grad_cam_1d`,
-então `0.5` é a metade superior da ativação daquele batimento) e comparado com
-a máscara clínica via `IoU = interseção / união`. União vazia (nem mapa nem
-máscara marcam amostra alguma) é ignorada — isso importa nas máscaras por
-estrutura, já que em fibrilação/flutter atrial a onda P não existe e um IoU de
-`1.0` premiaria o Grad-CAM por "acertar" uma estrutura ausente. Para a
-`mascara_clinica` a união nunca é vazia.
-
-O limiar **não é varrido por conjunto**, pelo mesmo motivo do limiar de
-decisão fixo: isso abriria uma forma indireta de ajustar o resultado aos
-dados de teste.
-
-### Referência ao acaso
-
-Um mapa aleatório atinge, em média, um IoU próximo da **cobertura da máscara**
-(`dataset["metadata"]["cobertura_media_mascara_clinica"]`, a fração média da
-janela anotada). Esse é o piso: um IoU médio que apenas o iguala não indica
-foco nenhum. O script reporta `esperado ao acaso` e `acima do acaso` lado a
-lado com o IoU medido.
-
-### Quebra por classe prevista
-
-O IoU é reportado geral, por classe **prevista** (`iou_pred_0`/`iou_pred_1`) e
-por classe **verdadeira**. A separação por predição existe porque o mapa é
-normalizado pelo próprio máximo: num verdadeiro negativo, ativação fraca e
-ruidosa ainda vira um pico "quente", e o IoU ali mede outra coisa — a mesma
-ressalva do quadrante VN discutida no notebook `05`.
-
-### Formato da saída
-
-Em `outputs/models/<run>/fidelidade_ludb/`:
-
-| Arquivo | Conteúdo |
-| --- | --- |
-| `ludb_fidelity.npz` | `iou_por_batimento` `(n,)`, `y_true`, `y_pred`, `ritmos`, `limiar_cam` — alinhado por índice com `ludb_gradcam.npz` e com o dataset do LUDB |
-| `ludb_fidelity.json` | proveniência (Grad-CAM, dataset), o IoU médio geral / por classe / por estrutura e a referência ao acaso |
-
-### Resultado (execução de referência)
-
-| Máscara | IoU médio | IoU mediana | Esperado ao acaso |
-| --- | --- | --- | --- |
-| clínica (P+QRS+T) | 0,077 | 0,071 | 0,577 |
-| QRS | 0,221 | 0,217 | — |
-| T | 0,027 | 0,000 | — |
-| P | 0,011 | 0,000 | — |
-
-A `mascara_clinica` cobre **58 % da janela** (a união P+QRS+T é quase o
-batimento inteiro), então o IoU contra ela é dominado pelo tamanho da máscara e
-diz pouco. O número informativo é o **IoU por estrutura**: a metade quente do
-Grad-CAM se concentra no **QRS** (IoU 0,22, contra 0,03 na T e 0,01 na P) — o
-mapa aponta o complexo QRS, não pontos arbitrários, mesmo com o modelo
-acertando pouco no LUDB. A quebra por classe prevista está em `ludb_fidelity.json`.
-
-## Notebooks
-
-| Notebook | Conteúdo |
-| --- | --- |
-| `01_exploracao_mitbih.ipynb` | Exploração da base de treino |
-| `02_exploracao_ludb.ipynb` | Exploração da base de teste e das anotações clínicas |
-| `03_analise_treino.ipynb` | Análise pós-treino: curvas por época, matriz de confusão, falhas por tipo de batimento e dispersão entre pacientes |
-| `04_teste_ludb.ipynb` | Uso do modelo treinado: carrega o checkpoint, avalia o LUDB, quebra por ritmo e plota batimentos com as regiões P/QRS/T sombreadas |
-| `05_gradcam_demo.ipynb` | Carrega o Grad-CAM já extraído (`ludb_gradcam.npz`) e plota, numa grade 2×2, o batimento mais confiante de cada quadrante da matriz de confusão (VP/VN/FP/FN) com o ECG colorido pela ativação e as regiões de P/QRS/T sombreadas |
-| `06_fidelidade_iou.ipynb` | Cruza `cam_interp` com `mascara_clinica`: IoU por batimento, distribuição, quebra por classe prevista e por ritmo, e o overlay do mapa binarizado contra a anotação nos batimentos de maior e menor IoU |
-
-Os notebooks 03 e 04 são a versão exploratória do que os dois scripts fazem em
-lote — o 04, em particular, demonstra o caminho de quem recebe apenas o `.pt` e
-quer rodar o modelo em dados novos. O 05 é a versão visual do que
-`extract_gradcam.py` faz em lote, e o 06 do que `fidelity_ludb.py` faz.
-
-## Próximas etapas
-
-- [x] CNN 1D binária treinada no MIT-BIH (Etapa 3)
-- [x] Extração do Grad-CAM 1D no LUDB (Etapa 4, parte 1)
-- [x] Métrica quantitativa de fidelidade: IoU entre `cam_interp` e
-      `mascara_clinica`/`mascara_p`/`mascara_qrs`/`mascara_t`, um número por
-      batimento (Etapa 4, parte 2 — `fidelity.py`, `src/fidelity_ludb.py`)
-- [ ] Análise de falhas da métrica por ritmo e por tipo de arritmia (Etapa 4)
-- [ ] Análise crítica e redação do artigo (Etapa 5)
+A documentação da entrega é composta por este README e pelos quatro documentos principais indicados no início.
