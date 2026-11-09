@@ -17,7 +17,7 @@ Esta legenda esclarece a nomenclatura interna atual. Em documentos marcados **HI
 <!-- /legenda-interna-projeto -->
 
 
-STATUS: ATUAL — revisão editorial de 30/10/2026. Comece pelo [relatório geral](RELATORIO_GERAL_PROJETO.md), [relatório visual](RELATORIO_VISUAL_RESULTADOS.md), [guia dos notebooks oficiais](GUIA_NOTEBOOKS_RESULTADOS.md) e [correções finais](RELATORIO_CORRECOES_FINAIS.md).
+STATUS: ATUAL — revisão editorial de 30/10/2026. Comece pelo [relatório geral](relatorios/RELATORIO_GERAL_PROJETO.md), [relatório visual](relatorios/RELATORIO_VISUAL_RESULTADOS.md), [guia dos notebooks oficiais](relatorios/GUIA_NOTEBOOKS_RESULTADOS.md) e [correções finais](relatorios/RELATORIO_CORRECOES_FINAIS.md).
 
 O projeto treina uma CNN 1D binária em beats do MIT-BIH, testa a generalização externa em beats do LUDB e compara o Grad-CAM com as delimitações P/QRS/T por IoU. O LUDB diagnostica principalmente o registro; o diagnóstico selecionado é propagado aos beats aceitos, limitação metodológica reconhecida pelo grupo.
 
@@ -30,7 +30,7 @@ Treino e teste usam famílias compartilhadas e uma política explícita em todas
 | `shared-extrasystoles-v1` | `SEM_BLOQUEIO` | `N=0`; `A/a/V=1` | extrasístoles atriais/ventriculares |
 | `shared-extrasystoles-bbb-v1` | `COM_BLOQUEIO` | `N=0`; `A/a/V/L/R=1` | anteriores + LBBB/RBBB completos/incompletos |
 
-Os demais símbolos e diagnósticos ficam fora da tarefa; exclusão não significa normalidade. Isquemia, por exemplo, não é convertida em 0. Pacing é excluído nas duas políticas. Consulte [as políticas atuais](RELATORIO_GERAL_PROJETO.md#classificacao-detalhada) para o contrato operacional e o mapeamento completo.
+Os demais símbolos e diagnósticos ficam fora da tarefa; exclusão não significa normalidade. Isquemia, por exemplo, não é convertida em 0. Pacing é excluído nas duas políticas. Consulte [as políticas atuais](relatorios/RELATORIO_GERAL_PROJETO.md#classificacao-detalhada) para o contrato operacional e o mapeamento completo.
 
 ## Estrutura
 
@@ -56,7 +56,7 @@ outputs/                  manifests, checkpoints e resultados
 
 ## Instalação
 
-O ambiente registrado usou Python 3.11.17 e PyTorch 2.11.0+cu128. PyTorch/CUDA são instalados separadamente dos requisitos gerais. Consulte [o ambiente e os limites de reprodução](RELATORIO_GERAL_PROJETO.md#ambiente-reprodutibilidade); não há lockfile completo das demais bibliotecas.
+O ambiente registrado usou Python 3.11.17 e PyTorch 2.11.0+cu128. PyTorch/CUDA são instalados separadamente dos requisitos gerais. Consulte [o ambiente e os limites de reprodução](relatorios/RELATORIO_GERAL_PROJETO.md#ambiente-reprodutibilidade); não há lockfile completo das demais bibliotecas.
 
 ```bash
 python -m venv .venv
@@ -132,9 +132,9 @@ Grad-CAM e IoU preservam os mesmos metadados. O Grad-CAM confere que usa o mesmo
 
 ## Notebooks e apresentação oficial
 
-Os **12 notebooks oficiais** estão em `outputs/notebooks_executados/<slug>/`. A pasta `notebooks/` preserva outputs históricos e está marcada como tal. Os notebooks 03/04 oficiais contêm código de inferência: para consulta, leia seus outputs já salvos. O notebook 06 lê IoUs persistidos e mostra as contagens das duas classes por ritmo. Veja o [guia completo](GUIA_NOTEBOOKS_RESULTADOS.md).
+Os **12 notebooks oficiais** estão em `outputs/notebooks_executados/<slug>/`. A pasta `notebooks/` preserva outputs históricos e está marcada como tal. Os notebooks 03/04 oficiais contêm código de inferência: para consulta, leia seus outputs já salvos. O notebook 06 lê IoUs persistidos e mostra as contagens das duas classes por ritmo. Veja o [guia completo](relatorios/GUIA_NOTEBOOKS_RESULTADOS.md).
 
-A cobertura clínica ≈ 0,576 não foi validada como baseline aleatório de IoU. Campos antigos `cobertura_acaso`/`acima_do_acaso` são deprecated e preservados nos artefatos por compatibilidade, sem interpretação estatística. Consulte [o contrato](RELATORIO_GERAL_PROJETO.md#campos-legados-iou).
+A cobertura clínica ≈ 0,576 não foi validada como baseline aleatório de IoU. Campos antigos `cobertura_acaso`/`acima_do_acaso` são deprecated e preservados nos artefatos por compatibilidade, sem interpretação estatística. Consulte [o contrato](relatorios/RELATORIO_GERAL_PROJETO.md#campos-legados-iou).
 
 O treinamento aplica seed 0 a Python/NumPy/PyTorch e configura cuDNN; não há evidência no pacote para comprovar igualdade bit a bit entre execuções independentes.
 
@@ -144,6 +144,6 @@ O treinamento aplica seed 0 a Python/NumPy/PyTorch e configura cuDNN; não há e
 python src/compare_policies.py --validate-only
 ```
 
-Este modo apenas lê/agrega. A revisão editorial foi validada com a ferramenta independente em `relatorios/validar_resultados.cjs`; os artefatos numéricos originais permaneceram idênticos.
+Este modo apenas lê/agrega. A revisão editorial foi validada com a ferramenta independente em `relatorios/geracao/validar_resultados.cjs`; os artefatos numéricos originais permaneceram idênticos.
 
 A documentação da entrega é composta por este README e pelos quatro documentos principais indicados no início.

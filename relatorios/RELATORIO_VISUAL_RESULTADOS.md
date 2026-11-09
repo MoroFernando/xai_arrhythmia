@@ -21,29 +21,29 @@ STATUS: ATUAL — apresentação da execução final existente, revisada em 30/1
 
 ## 1. Visão geral
 
-![Pipeline](relatorios/figuras/pipeline.svg)
+![Pipeline](geracao/figuras/pipeline.svg)
 
 ## 2. Treinamento SEM — BEST época 2
 
-![Curvas SEM](relatorios/figuras/treino_sem.svg)
+![Curvas SEM](geracao/figuras/treino_sem.svg)
 
 ## 3. Treinamento COM — BEST época 3
 
-![Curvas COM](relatorios/figuras/treino_com.svg)
+![Curvas COM](geracao/figuras/treino_com.svg)
 
 A validação termina pior apesar da redução da loss de treino. O BEST foi selecionado somente no MIT.
 
 ## 4. Matrizes MIT
 
-![Matrizes MIT](relatorios/figuras/matrizes_mit.svg)
+![Matrizes MIT](geracao/figuras/matrizes_mit.svg)
 
 ## 5. Matrizes LUDB
 
-![Matrizes LUDB](relatorios/figuras/matrizes_ludb.svg)
+![Matrizes LUDB](geracao/figuras/matrizes_ludb.svg)
 
 ## 6. Métricas principais
 
-![Métricas LUDB](relatorios/figuras/metricas_ludb.svg)
+![Métricas LUDB](geracao/figuras/metricas_ludb.svg)
 
 | Avaliação | n | Accuracy | BA | Precision | Recall | Specificity | F1 | ROC-AUC | TN | FP | FN | TP |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -53,7 +53,7 @@ A validação termina pior apesar da redução da loss de treino. O BEST foi sel
 
 As três avaliações acima têm populações diferentes; somente a figura seguinte compara modelos nos mesmos beats. COM somente completos usa o mesmo checkpoint COM.
 
-![Comparação pareada](relatorios/figuras/mesmos_beats.svg)
+![Comparação pareada](geracao/figuras/mesmos_beats.svg)
 
 | Grupo | 0→0 | 0→1 | 1→0 | 1→1 |
 | --- | --- | --- | --- | --- |
@@ -64,7 +64,7 @@ As três avaliações acima têm populações diferentes; somente a figura segui
 
 ## 7. Completos e incompletos
 
-![Bloqueios](relatorios/figuras/bloqueios.svg)
+![Bloqueios](geracao/figuras/bloqueios.svg)
 
 | Subtipo | Beats | Registros | TP | FN | Recall | FNR | Score médio | Score mediano |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -75,7 +75,7 @@ As três avaliações acima têm populações diferentes; somente a figura segui
 
 ## 8. Origem dos falsos negativos
 
-![FN exclusivos](relatorios/figuras/falsos_negativos.svg)
+![FN exclusivos](geracao/figuras/falsos_negativos.svg)
 
 | Grupo exclusivo | Positivos | FN |
 | --- | --- | --- |
@@ -94,7 +94,7 @@ Os painéis abaixo são os PNGs originais do notebook 05. Critério reproduzíve
 O Grad-CAM indica regiões que mais influenciaram a saída do modelo. Os mapas se referem à saída positiva, inclusive nos negativos; não são prova clínica nem localização de doença.
 ### SEM
 
-![SEM — quadrantes originais](relatorios/figuras/gradcam_sem.png)
+![SEM — quadrantes originais](geracao/figuras/gradcam_sem.png)
 
 | Quadrante | record_id | beat_id | y_true | y_pred | Score | Família/subtipo |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -105,7 +105,7 @@ O Grad-CAM indica regiões que mais influenciaram a saída do modelo. Os mapas s
 
 ### COM
 
-![COM — quadrantes originais](relatorios/figuras/gradcam_com.png)
+![COM — quadrantes originais](geracao/figuras/gradcam_com.png)
 
 | Quadrante | record_id | beat_id | y_true | y_pred | Score | Família/subtipo |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -118,27 +118,27 @@ As tabelas identificam os subtipos efetivamente presentes nesses painéis. Não 
 
 ## 10. IoU visual
 
-![IoU geral](relatorios/figuras/iou_global.svg)
+![IoU geral](geracao/figuras/iou_global.svg)
 
 | Modelo/população | IoU geral | P | QRS | T |
 | --- | --- | --- | --- | --- |
 | SEM — n=192 | 0.1141 | 0.0027 | 0.3501 | 0.0259 |
 | COM — n=390 | 0.1186 | 0.0114 | 0.3292 | 0.0477 |
 
-![IoU pareado](relatorios/figuras/iou_comum.svg)
+![IoU pareado](geracao/figuras/iou_comum.svg)
 
 | Modelo — mesmos 192 | IoU geral | P | QRS | T |
 | --- | --- | --- | --- | --- |
 | SEM | 0.1141 | 0.0027 | 0.3501 | 0.0259 |
 | COM | 0.1186 | 0.0113 | 0.3560 | 0.0351 |
 
-![IoU por subtipo](relatorios/figuras/iou_subtipos.svg)
+![IoU por subtipo](geracao/figuras/iou_subtipos.svg)
 
 A cobertura clínica ≈ 0,576 não foi validada como baseline aleatório. Nenhuma linha de acaso foi usada nesses gráficos.
 
 ## 11. Classificação e explicabilidade
 
-![Acertos e IoU](relatorios/figuras/classificacao_iou.svg)
+![Acertos e IoU](geracao/figuras/classificacao_iou.svg)
 
 | Modelo | Grupo | n | IoU médio | IoU mediano |
 | --- | --- | --- | --- | --- |
@@ -153,20 +153,20 @@ Incomplete LBBB: recall 0% e IoU-QRS médio ≈ 0,401. Isso mostra que acerto bi
 
 ### SEM
 
-- [01_exploracao_mitbih.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
-- [02_exploracao_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
-- [03_analise_treino.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
-- [04_teste_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
-- [05_gradcam_demo.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
-- [06_fidelidade_iou.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
+- [01_exploracao_mitbih.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
+- [02_exploracao_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
+- [03_analise_treino.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
+- [04_teste_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
+- [05_gradcam_demo.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
+- [06_fidelidade_iou.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
 
 ### COM
 
-- [01_exploracao_mitbih.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
-- [02_exploracao_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
-- [03_analise_treino.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
-- [04_teste_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
-- [05_gradcam_demo.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
-- [06_fidelidade_iou.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
+- [01_exploracao_mitbih.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
+- [02_exploracao_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
+- [03_analise_treino.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
+- [04_teste_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
+- [05_gradcam_demo.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
+- [06_fidelidade_iou.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
 
 [Guia completo](GUIA_NOTEBOOKS_RESULTADOS.md) · [Relatório geral](RELATORIO_GERAL_PROJETO.md)

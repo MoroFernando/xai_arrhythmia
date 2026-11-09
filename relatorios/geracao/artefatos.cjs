@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
-const BASE = path.resolve(__dirname, '..');
+const BASE = path.resolve(__dirname, '..', '..');
 function local(p) {
   const target = path.resolve(BASE, p.replace(/^xai_arrhythmia\//, ''));
   if (target !== BASE && !target.startsWith(BASE + path.sep)) throw Error('Fora de pos3: ' + p);

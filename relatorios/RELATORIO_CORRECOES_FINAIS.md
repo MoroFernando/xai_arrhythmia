@@ -23,16 +23,16 @@ STATUS: ATUAL — revisão editorial de 30/10/2026. Fonte exclusiva: pos3.
 
 | Arquivo / conjunto | Problema | Correção |
 | --- | --- | --- |
-| [src/fidelity_ludb.py](src/fidelity_ludb.py) | Cobertura chamada de acaso | Comentários, docstrings e apresentação corrigidos; parâmetros e campos legados mantidos por compatibilidade |
+| [src/fidelity_ludb.py](../src/fidelity_ludb.py) | Cobertura chamada de acaso | Comentários, docstrings e apresentação corrigidos; parâmetros e campos legados mantidos por compatibilidade |
 | Dois notebooks oficiais 06 | Classe única para grupos mistos e baseline sem derivação | Contagens/percentuais 0/1; leitura de IoUs persistidos; histograma sem linha de acaso |
 | Outros dez notebooks oficiais | Identificação insuficiente | Banner ATUAL, política, BEST e escopo da revisão; outputs numéricos preservados |
 | Seis notebooks de notebooks/ | Outputs antigos podiam parecer atuais | Banner HISTÓRICO; notebooks e outputs preservados |
 | [Relatório geral atual](RELATORIO_GERAL_PROJETO.md) | Interpretação de IoU e afirmação forte de repetibilidade | Texto qualificado; tabelas numéricas originais mantidas |
-| [README atual](README.md) | Navegação e instalação ambíguas | Relatórios/guia oficiais e instalação separada de PyTorch |
+| [README atual](../README.md) | Navegação e instalação ambíguas | Relatórios/guia oficiais e instalação separada de PyTorch |
 | [Políticas atuais consolidadas](RELATORIO_GERAL_PROJETO.md#classificacao-detalhada) | Falta de orientação unificada | Status atual, duas políticas oficiais e natureza do recorte COM completos |
 | Documentação histórica e duplicada | Regras antigas e navegação redundante | Removida da entrega; a metodologia atual está no relatório geral |
 | requirements.txt | Índice cu124 divergente | Dependências gerais separadas de requirements-pytorch-cu128.txt |
-| [src/compare_policies.py](src/compare_policies.py) | Lacunas na validação | Dez checks adicionais: histórico BEST/LAST e recorte completos derivado dos scores; opção --validate-only |
+| [src/compare_policies.py](../src/compare_policies.py) | Lacunas na validação | Dez checks adicionais: histórico BEST/LAST e recorte completos derivado dos scores; opção --validate-only |
 | relatorios/*.cjs | Faltava ferramenta editorial isolada | Leitor ZIP/NPY, gerador de apresentação, correções editoriais, HTML e validador independente; sem imports do pipeline |
 
 ## B. Problemas de interpretação corrigidos
@@ -82,7 +82,7 @@ Os painéis originais selecionam extremos de score por quadrante; tabelas aprese
 
 ## H. Verificações e pendências
 
-Os 41 arquivos originais protegidos (checkpoints, datasets, scores, métricas, históricos, CSV clínico e logs) possuem hashes em [manifesto_artefatos_originais.json](relatorios/manifesto_artefatos_originais.json). A validação independente está em [verificacao_revisao_final.json](relatorios/verificacao_revisao_final.json).
+Os 41 arquivos originais protegidos (checkpoints, datasets, scores, métricas, históricos, CSV clínico e logs) possuem hashes em [manifesto_artefatos_originais.json](geracao/manifesto_artefatos_originais.json). A validação independente está em [verificacao_revisao_final.json](geracao/verificacao_revisao_final.json).
 
 Resultado final da ferramenta complementar: **314 verificações, 314 aprovadas, zero falhas**. Os 41 hashes originais permaneceram iguais. Os links locais dos documentos novos foram conferidos, os SVGs foram analisados como XML e o painel Grad-CAM COM extraído foi inspecionado visualmente.
 

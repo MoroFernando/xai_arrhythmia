@@ -3,7 +3,7 @@
 const a=require('./artefatos.cjs');
 const fs=require('fs'),path=require('path'),{pathToFileURL}=require('url'),{spawnSync}=require('child_process');
 const browser='C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
-const files=a.walk().filter(p=>p.endsWith('.md')&&!p.startsWith('relatorios_pdf/')&&!p.startsWith('relatorios/exportacao_html/'));
+const files=a.walk().filter(p=>p.endsWith('.md')&&!p.startsWith('relatorios_pdf/')&&!p.startsWith('relatorios/geracao/exportacao_html/'));
 const legend=`<!-- legenda-interna-projeto -->
 ## Legenda de nomes e abreviações do projeto
 
@@ -46,20 +46,20 @@ function render(md){let out=[],inTable=false,tableHead=false,list=null,fence=fal
 }
 const css=`@page{size:A4 landscape;margin:13mm 12mm}*{box-sizing:border-box}body{font:10pt/1.42 Arial,sans-serif;color:#183342;margin:0}h1{font-size:22pt;margin:0 0 14pt}h2{font-size:16pt;margin:20pt 0 9pt;break-after:avoid}h3{font-size:12pt;margin-top:15pt;break-after:avoid}p{margin:5pt 0 8pt}img{display:block;max-width:100%;max-height:168mm;object-fit:contain;margin:9pt auto;break-inside:avoid}table{border-collapse:collapse;width:100%;margin:9pt 0 14pt;font-size:8pt;table-layout:auto}th,td{border:1px solid #cbd9df;padding:5pt;vertical-align:top;overflow-wrap:anywhere}th{background:#e6f0f4;color:#153c4b}thead{display:table-header-group}tr{break-inside:avoid}a{color:#126e82;text-decoration:none}pre{font:8pt/1.35 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:#f1f4f6;padding:8pt;border:1px solid #dbe3e7}code{font-size:.92em;overflow-wrap:anywhere}blockquote{border-left:3px solid #d66a32;padding:4pt 10pt;margin:10pt 0;background:#fff7ee}li{margin:3pt 0}hr{border:0;border-top:1px solid #d6e1e6;margin:14pt 0}`;
 const htmlPaths=[];
-for(const p of files){const md=a.read(p).toString('utf8'),title=md.match(/^# (.*)$/m)?.[1]||path.basename(p);const base=(path.relative(path.dirname(a.local('relatorios/exportacao_html/'+p.replace(/\.md$/,'.html'))),a.local(path.dirname(p))).replaceAll('\\','/')||'.')+'/';
+for(const p of files){const md=a.read(p).toString('utf8'),title=md.match(/^# (.*)$/m)?.[1]||path.basename(p);const base=(path.relative(path.dirname(a.local('relatorios/geracao/exportacao_html/'+p.replace(/\.md$/,'.html'))),a.local(path.dirname(p))).replaceAll('\\','/')||'.')+'/';
  const html='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><base href="'+a.esc(base)+'"><title>'+a.esc(title)+'</title><style>'+css+'</style></head><body>'+render(md)+'</body></html>';
- const target='relatorios/exportacao_html/'+p.replace(/\.md$/,'.html');a.write(target,html);htmlPaths.push({md:p,html:target,pdf:'relatorios_pdf/'+p.replace(/\.md$/,'.pdf')});
+ const target='relatorios/geracao/exportacao_html/'+p.replace(/\.md$/,'.html');a.write(target,html);htmlPaths.push({md:p,html:target,pdf:'relatorios_pdf/'+p.replace(/\.md$/,'.pdf')});
 }
 // Mantem a versao HTML de consulta do relatorio visual sincronizada com o MD.
-const visual=htmlPaths.find(v=>v.md==='RELATORIO_VISUAL_RESULTADOS.md');a.write('RELATORIO_VISUAL_RESULTADOS.html',a.read(visual.html).toString('utf8').replace(/<base\b[^>]*>/gi,''));
+const visual=htmlPaths.find(v=>v.md==='relatorios/RELATORIO_VISUAL_RESULTADOS.md');a.write('relatorios/geracao/RELATORIO_VISUAL_RESULTADOS.html',a.read(visual.html).toString('utf8').replace(/<base\b[^>]*>/gi,'<base href="../">'));
 const indexTitle='Índice dos relatórios em PDF';
 const indexHtml='<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+indexTitle+'</title><style>'+css+'</style></head><body><h1>'+indexTitle+'</h1><p>Versões PDF dos documentos Markdown de pos3. Os arquivos .md permanecem em seus locais originais. COM = com bloqueio como alvo; SEM = sem bloqueio como alvo. Consulte a legenda de cada documento.</p><p>Os caminhos abaixo são relativos à pasta relatorios_pdf. Documentos históricos permanecem identificados no próprio texto.</p><table><thead><tr><th>Arquivo PDF</th><th>Fonte Markdown preservada</th></tr></thead><tbody>'+htmlPaths.map(v=>'<tr><td>'+a.esc(v.pdf.replace(/^relatorios_pdf\//,''))+'</td><td>'+a.esc(v.md)+'</td></tr>').join('')+'</tbody></table></body></html>';
-a.write('relatorios/exportacao_html/INDICE_RELATORIOS.html',indexHtml);htmlPaths.unshift({md:null,html:'relatorios/exportacao_html/INDICE_RELATORIOS.html',pdf:'relatorios_pdf/INDICE_RELATORIOS.pdf'});
+a.write('relatorios/geracao/exportacao_html/INDICE_RELATORIOS.html',indexHtml);htmlPaths.unshift({md:null,html:'relatorios/geracao/exportacao_html/INDICE_RELATORIOS.html',pdf:'relatorios_pdf/INDICE_RELATORIOS.pdf'});
 fs.mkdirSync(a.local('relatorios_pdf'),{recursive:true});
-const profile=a.local('relatorios/exportacao_html/perfil_edge');
+const profile=a.local('relatorios/geracao/exportacao_html/perfil_edge');
 for(const entry of htmlPaths){fs.mkdirSync(path.dirname(a.local(entry.pdf)),{recursive:true});const args=['--headless','--no-sandbox','--disable-gpu-sandbox','--in-process-gpu','--disable-gpu','--no-first-run','--no-default-browser-check','--disable-background-networking','--disable-extensions','--no-pdf-header-footer','--allow-file-access-from-files','--user-data-dir='+profile,'--print-to-pdf='+a.local(entry.pdf),pathToFileURL(a.local(entry.html)).href];const r=spawnSync(browser,args,{windowsHide:true,timeout:60000,encoding:'utf8',maxBuffer:1024*1024});
  if(r.error||!fs.existsSync(a.local(entry.pdf))||a.read(entry.pdf).subarray(0,5).toString()!=='%PDF-')throw Error('Falha PDF '+entry.pdf+': '+(r.error?.message||r.stderr));
  console.log(entry.pdf+' ('+a.read(entry.pdf).length+' bytes)');
 }
-a.write('relatorios/exportacao_html/manifesto_pdfs.json',JSON.stringify({documentos_md:files.length,pdfs:htmlPaths.map(e=>({fonte:e.md,arquivo:e.pdf,bytes:a.read(e.pdf).length,sha256:a.hash(e.pdf)}))},null,2)+'\n');
+a.write('relatorios/geracao/exportacao_html/manifesto_pdfs.json',JSON.stringify({documentos_md:files.length,pdfs:htmlPaths.map(e=>({fonte:e.md,arquivo:e.pdf,bytes:a.read(e.pdf).length,sha256:a.hash(e.pdf)}))},null,2)+'\n');
 console.log('PDFs criados: '+htmlPaths.length+'. Markdown preservados nos locais originais, com legenda interna.');

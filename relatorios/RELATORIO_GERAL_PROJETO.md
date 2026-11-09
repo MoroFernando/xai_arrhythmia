@@ -207,7 +207,7 @@ Ambiente registrado: Python 3.11.17, PyTorch 2.11.0+cu128; RTX 5080 declarada no
 
 Veja [o ambiente](RELATORIO_GERAL_PROJETO.md#ambiente-reprodutibilidade). requirements gerais e instalação exata de PyTorch cu128 foram separados; as versões executadas das demais bibliotecas não foram todas preservadas, logo não existe lockfile completo da execução. A alegação original de duas repetições idênticas foi qualificada.
 
-Os 10 JSONs originais são válidos, sem NaN/Infinity e sem caminhos absolutos locais. Os artefatos originais estão protegidos por [manifesto de hashes](relatorios/manifesto_artefatos_originais.json). O validador complementar trabalha sem importar código do pipeline.
+Os 10 JSONs originais são válidos, sem NaN/Infinity e sem caminhos absolutos locais. Os artefatos originais estão protegidos por [manifesto de hashes](geracao/manifesto_artefatos_originais.json). O validador complementar trabalha sem importar código do pipeline.
 
 ## 20. Conclusões
 
@@ -219,21 +219,21 @@ Treinamento/validação: notebook 03; teste externo e exemplos de erro: 04; Grad
 
 ### SEM
 
-- [01_exploracao_mitbih.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
-- [02_exploracao_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
-- [03_analise_treino.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
-- [04_teste_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
-- [05_gradcam_demo.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
-- [06_fidelidade_iou.ipynb](outputs/notebooks_executados/shared-extrasystoles-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
+- [01_exploracao_mitbih.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
+- [02_exploracao_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
+- [03_analise_treino.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
+- [04_teste_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
+- [05_gradcam_demo.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
+- [06_fidelidade_iou.ipynb](../outputs/notebooks_executados/shared-extrasystoles-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
 
 ### COM
 
-- [01_exploracao_mitbih.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
-- [02_exploracao_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
-- [03_analise_treino.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
-- [04_teste_ludb.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
-- [05_gradcam_demo.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
-- [06_fidelidade_iou.ipynb](outputs/notebooks_executados/shared-extrasystoles-bbb-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
+- [01_exploracao_mitbih.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/01_exploracao_mitbih.ipynb) — População, símbolos e exemplos MIT.
+- [02_exploracao_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/02_exploracao_ludb.ipynb) — População, ritmos e máscaras LUDB.
+- [03_analise_treino.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/03_analise_treino.ipynb) — Curvas, BEST e validação MIT.
+- [04_teste_ludb.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/04_teste_ludb.ipynb) — Teste LUDB, erros e distribuições de scores.
+- [05_gradcam_demo.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/05_gradcam_demo.ipynb) — Painéis de Grad-CAM já calculados.
+- [06_fidelidade_iou.ipynb](../outputs/notebooks_executados/shared-extrasystoles-bbb-v1/06_fidelidade_iou.ipynb) — IoU salvo e tabela corrigida de ritmos.
 
 Consulte também [o guia completo](GUIA_NOTEBOOKS_RESULTADOS.md), [o relatório visual](RELATORIO_VISUAL_RESULTADOS.md) e [o resumo desta revisão](RELATORIO_CORRECOES_FINAIS.md).
 

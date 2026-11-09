@@ -5,7 +5,7 @@ const {read,json,hash,write,walk,npz,metrics,mean,same,P,loadRuns}=a;
 const checks=[];
 function check(nome,ok){checks.push({verificacao:nome,ok:Boolean(ok)});}
 function compare(name,m,stored){for(const k of ['n','tn','fp','fn','tp','acuracia','acuracia_balanceada','precisao','sensibilidade','especificidade','f1','auc_roc'])check(name+': '+k,Math.abs(m[k]-stored[k])<=1e-10);}
-const manifest=json('relatorios/manifesto_artefatos_originais.json');
+const manifest=json('relatorios/geracao/manifesto_artefatos_originais.json');
 for(const [p,h]of Object.entries(manifest.arquivos))check('Original preservado: '+p,hash(p)===h);
 const runs=loadRuns(),comparison=json(P+'outputs/comparacao_politicas/comparacao_sem_vs_com.json');
 for(const r of runs){
@@ -60,10 +60,10 @@ check('Somente completos: preserva shared subset',mask.every((v,j)=>!shared[j]||
 compare('COM completos independente',metrics(pc.y_true.filter((v,j)=>mask[j]),pc.y_score.filter((v,j)=>mask[j])),com.t.avaliacao_somente_completos.metrics);
 for(const file of walk().filter(p=>p.endsWith('.json'))){try{json(file);check('JSON estrito: '+file,true);}catch{check('JSON estrito: '+file,false);}}
 for(const r of runs)for(const file of walk(P+'outputs/notebooks_executados/'+r.slug).filter(p=>p.endsWith('.ipynb'))){const n=json(file),source=n.cells.map(c=>c.source.join('')).join('\n');check('Notebook sem erro salvo: '+file,!n.cells.some(c=>(c.outputs||[]).some(o=>o.output_type==='error')));check('Notebook identificado ATUAL: '+file,source.includes('STATUS: ATUAL'));check('Notebook sem populacao historica no texto: '+file,!/1228|100695/.test(source));if(file.endsWith('06_fidelidade_iou.ipynb')){check(r.name+': NB06 sem recalculo de IoU',!source.includes('res = fidelity.fidelidade('));check(r.name+': NB06 tabela de classes correta',source.includes('n_classe_0')&&source.includes('n_classe_1')&&!source.includes('int(y_true[m][0])'));}}
-const docs=["README.md","RELATORIO_GERAL_PROJETO.md","RELATORIO_VISUAL_RESULTADOS.md","GUIA_NOTEBOOKS_RESULTADOS.md","RELATORIO_CORRECOES_FINAIS.md"];
+const docs=["README.md","relatorios/RELATORIO_GERAL_PROJETO.md","relatorios/RELATORIO_VISUAL_RESULTADOS.md","relatorios/GUIA_NOTEBOOKS_RESULTADOS.md","relatorios/RELATORIO_CORRECOES_FINAIS.md"];
 const path=require('path'),fs=require('fs');
-for(const doc of docs){const content=read(doc).toString('utf8');for(const match of content.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)){const href=match[1];if(/^[a-z]+:|^#/.test(href)||href==='relatorios/verificacao_revisao_final.json')continue; /* o proprio parecer e gravado ao final */check('Link relativo valido: '+doc+' -> '+href,fs.existsSync(a.local(path.join(path.dirname(doc),href.split('#')[0]))));}}
+for(const doc of docs){const content=read(doc).toString('utf8');for(const match of content.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)){const href=match[1];if(/^[a-z]+:|^#/.test(href)||href==='relatorios/geracao/verificacao_revisao_final.json')continue; /* o proprio parecer e gravado ao final */check('Link relativo valido: '+doc+' -> '+href,fs.existsSync(a.local(path.join(path.dirname(doc),href.split('#')[0]))));}}
 const failing=checks.filter(c=>!c.ok),report={escopo:'Somente leitura/agregacao de artefatos existentes em pos3; sem pipeline.',data:'2026-10-30',checagens:checks.length,aprovadas:checks.length-failing.length,falhas:failing,verificacoes:checks};
-if(!process.argv.includes('--read-only'))write('relatorios/verificacao_revisao_final.json',JSON.stringify(report,null,2)+'\n');
+if(!process.argv.includes('--read-only'))write('relatorios/geracao/verificacao_revisao_final.json',JSON.stringify(report,null,2)+'\n');
 console.log(JSON.stringify({checagens:report.checagens,aprovadas:report.aprovadas,falhas:failing},null,2));
 if(failing.length)process.exitCode=1;

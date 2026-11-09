@@ -15,13 +15,13 @@ for(const p of ['FUNDAMENTACAO.md','ANALISE_CLASSIFICACAO_LUDB.md'])edit(p,s=>s.
  '> STATUS: HISTÓRICO — não representa a política utilizada na execução final.\n> Preserve este texto como registro das decisões anteriores. Para a metodologia atual, consulte [o relatório geral](./RELATORIO_GERAL_PROJETO.md) e [as políticas oficiais](./CLASSIFICACAO_ATUALIZADA.md). Flags antigas não estão disponíveis na execução final.\n\n'+s);
 const runs=loadRuns();
 for(const p of walk('notebooks').filter(p=>p.endsWith('.ipynb'))){const n=json(p);if(!n.cells.some(c=>c.source.join('').includes('STATUS: HISTÓRICO')))
- n.cells.unshift({cell_type:'markdown',metadata:{},source:['> STATUS: HISTÓRICO — outputs preservados; não representam os experimentos finais SEM/COM.\n','> Não execute este notebook para reproduzir os resultados oficiais. Consulte [o guia](../GUIA_NOTEBOOKS_RESULTADOS.md).\n','> Referências antigas a cobertura como acaso não são válidas como baseline aleatório de IoU.\n']});
+ n.cells.unshift({cell_type:'markdown',metadata:{},source:['> STATUS: HISTÓRICO — outputs preservados; não representam os experimentos finais SEM/COM.\n','> Não execute este notebook para reproduzir os resultados oficiais. Consulte [o guia](../relatorios/GUIA_NOTEBOOKS_RESULTADOS.md).\n','> Referências antigas a cobertura como acaso não são válidas como baseline aleatório de IoU.\n']});
  write(p,JSON.stringify(n,null,1)+'\n');}
-write('notebooks/README.md','# Notebooks históricos\n\nOs seis notebooks desta pasta preservam outputs anteriores à execução final, mesmo quando partes do código foram atualizadas. Não são os resultados oficiais. Não foram apagados nem reexecutados.\n\nUse os 12 notebooks de [outputs/notebooks_executados](../outputs/notebooks_executados/) e o [guia completo](../GUIA_NOTEBOOKS_RESULTADOS.md).\n');
+write('notebooks/README.md','# Notebooks históricos\n\nOs seis notebooks desta pasta preservam outputs anteriores à execução final, mesmo quando partes do código foram atualizadas. Não são os resultados oficiais. Não foram apagados nem reexecutados.\n\nUse os 12 notebooks de [outputs/notebooks_executados](../outputs/notebooks_executados/) e o [guia completo](../relatorios/GUIA_NOTEBOOKS_RESULTADOS.md).\n');
 for(const run of runs){
  const folder='outputs/notebooks_executados/'+run.slug+'/';
  for(const p of walk(folder).filter(p=>p.endsWith('.ipynb'))){const n=json(p);if(!n.cells.some(c=>c.source.join('').includes('STATUS: ATUAL')))
-  n.cells.unshift({cell_type:'markdown',metadata:{},source:[`> STATUS: ATUAL — execução final ${run.name}, BEST época ${run.m.checkpoint_epoch}.\n`,'> Revisão editorial em 30/10/2026: somente apresentação de resultados existentes; este notebook não foi reexecutado nesta revisão.\n','> Consulte o [guia oficial](../../../GUIA_NOTEBOOKS_RESULTADOS.md). Os notebooks 03/04 contêm chamadas de inferência; seus outputs estão preservados e não devem ser reexecutados nesta etapa editorial.\n']});
+  n.cells.unshift({cell_type:'markdown',metadata:{},source:[`> STATUS: ATUAL — execução final ${run.name}, BEST época ${run.m.checkpoint_epoch}.\n`,'> Revisão editorial em 30/10/2026: somente apresentação de resultados existentes; este notebook não foi reexecutado nesta revisão.\n','> Consulte o [guia oficial](../../../relatorios/GUIA_NOTEBOOKS_RESULTADOS.md). Os notebooks 03/04 contêm chamadas de inferência; seus outputs estão preservados e não devem ser reexecutados nesta etapa editorial.\n']});
  n.metadata.revisao_editorial={data:'2026-10-30',notebook_reexecutado:false,escopo:'Apresentacao; labels, scores, checkpoints e metricas originais preservados'};
  for(const c of n.cells){if(c.cell_type==='markdown'){
   let s=c.source.join('').replace(/1228/g,String(run.p.y_true.length));
@@ -42,7 +42,7 @@ for(const run of runs){
     const values=rows.map(r=>r.map((v,j)=>j>=4?Number(v).toFixed(j<6?2:6):String(v)));
     c.outputs=[{output_type:'display_data',metadata:{},data:{'text/plain':[heads.join(' | ')+'\n'+values.map(r=>r.join(' | ')).join('\n')],'text/html':['<table><thead><tr>'+heads.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+values.map(r=>'<tr>'+r.map(v=>'<td>'+esc(v)+'</td>').join('')+'</tr>').join('')+'</tbody></table>']}}];
    }
-   if(c.cell_type==='code'&&s.includes('hist(iou[~np.isnan(iou)]')){const svg=read('relatorios/figuras/distribuicao_iou_'+run.name.toLowerCase()+'.svg').toString();c.outputs=[{output_type:'display_data',metadata:{},data:{'image/svg+xml':[svg],'text/plain':['Distribuicao dos IoUs salvos; sem baseline aleatorio.']}}];}
+   if(c.cell_type==='code'&&s.includes('hist(iou[~np.isnan(iou)]')){const svg=read('relatorios/geracao/figuras/distribuicao_iou_'+run.name.toLowerCase()+'.svg').toString();c.outputs=[{output_type:'display_data',metadata:{},data:{'image/svg+xml':[svg],'text/plain':['Distribuicao dos IoUs salvos; sem baseline aleatorio.']}}];}
    for(const o of c.outputs||[]){if(o.text)o.text=o.text.flatMap(line=>line.includes('acima do acaso')?[]:[line.replace('esperado ao acaso','cobertura clinica').replace('(acaso)','(descritiva)')]);}
    c.source=s.split(/(?<=\n)/);
   }
@@ -58,6 +58,6 @@ edit('RELATORIO_EXECUCAO_FINAL.md',s=>{
  s=s.replaceAll('`requirements.txt` aponta para PyTorch cu124, sem suporte a GPUs RTX 50xx (Blackwell).','O ambiente de PyTorch/CUDA precisa ser instalado separadamente dos requisitos gerais.');
  s=s.replaceAll('**PENDENTE** (ambiente usou cu128; arquivo não alterado)','**DOCUMENTADO** em AMBIENTE_REPRODUTIBILIDADE.md; dependências gerais e PyTorch separados');
  s=s.replaceAll('`requirements.txt` instala PyTorch cu124, que não suporta RTX 50xx; quem usar essas GPUs precisa do índice cu128.','Instalação atual documentada em AMBIENTE_REPRODUTIBILIDADE.md: PyTorch 2.11.0+cu128 separado; versões das demais dependências não foram congeladas na execução.');
- return s.startsWith('> REVISÃO EDITORIAL')?s:'> REVISÃO EDITORIAL — 30/10/2026. Resultados numéricos originais preservados. Consulte também os novos relatórios geral/visual e o guia na raiz de pos3. As 85 verificações citadas abaixo pertencem à execução original; a validação complementar está em relatorios/.\n\n'+s;
+ return s.startsWith('> REVISÃO EDITORIAL')?s:'> REVISÃO EDITORIAL — 30/10/2026. Resultados numéricos originais preservados. Consulte também os novos relatórios geral/visual e o guia na raiz de pos3. As 85 verificações citadas abaixo pertencem à execução original; a validação complementar está em relatorios/geracao/.\n\n'+s;
 });
 console.log('Apresentacao e documentos existentes atualizados; artefatos numericos preservados.');
